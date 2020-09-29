@@ -1,5 +1,11 @@
 // The ~client~ (the thing that displays pieces & stuff)
 
+extern crate iced;
+
+use iced::{Application, Settings};
+
+pub mod gui;
+
 fn main() {
-    println!("Hello, world! I am the client!");
+    gui::Sharmat::run(Settings::default())
 }
