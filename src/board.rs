@@ -42,10 +42,7 @@ impl Board {
     }
 
     pub fn get(&self, x: usize, y: usize) -> BoardResult<&Option<Piece>> {
-        let res_check_pos = self.check_pos(x, y);
-        if let Err(err) = res_check_pos {
-            return Err(err);
-        }
+        self.check_pos(x, y)?;
         Ok(&self.board[x][y])
     }
 
