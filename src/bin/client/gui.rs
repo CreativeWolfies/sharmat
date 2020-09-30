@@ -1,24 +1,28 @@
 use std::num::NonZeroUsize;
 use iced::{
     canvas::layer::Cache,
-    canvas::{self, layer, Canvas, Drawable, Fill, Frame, Path},
+    canvas::{Canvas, Drawable, Fill, Frame, Path},
     executor,
     Application, Container, Element, Length, Point, Size, Color, Row, Command,
 };
 use sharmat::{
     board::*,
 };
+use super::style::SharmatStyleSheet;
 
+/// Main window model
 #[derive(Debug)]
 pub struct Sharmat {
     board: GBoard,
+    stylesheet: SharmatStyleSheet,
 }
 
+/// Message enum for user interaction
 #[derive(Debug)]
 pub enum SharmatMessage {}
-
 type Message = SharmatMessage;
 
+/// Graphical board (visible representation of the board)
 #[derive(Debug)]
 pub struct GBoard {
     pub board: Board,
@@ -33,12 +37,15 @@ impl Application for Sharmat {
     type Flags = ();
 
     fn new(_flags: Self::Flags) -> (Self, Command<Self::Message>) {
-        (Self { board: GBoard {
-            board: Board::new(NonZeroUsize::new(32).unwrap(), NonZeroUsize::new(32).unwrap()),
-            cache: Cache::new(),
-            fill_dark: Fill::Color(Color::from_rgb8(226, 149, 120)),
-            fill_light: Fill::Color(Color::from_rgb8(255, 221, 210))
-        }}, Command::none())
+        (Self {
+            board: GBoard {
+                board: Board::new(NonZeroUsize::new(8).unwrap(), NonZeroUsize::new(8).unwrap()),
+                cache: Cache::new(),
+                fill_dark: Fill::Color(Color::from_rgb8(226, 149, 120)),
+                fill_light: Fill::Color(Color::from_rgb8(255, 221, 210))
+            },
+            stylesheet: SharmatStyleSheet::default(),
+        }, Command::none())
     }
 
     fn title(&self) -> String {
@@ -55,6 +62,7 @@ impl Application for Sharmat {
             .height(Length::Fill)
             .center_x()
             .center_y()
+            .style(self.stylesheet)
             .into()
     }
 
