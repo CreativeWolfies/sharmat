@@ -1,10 +1,13 @@
+use std::num::NonZeroUsize;
 use iced::{
     canvas::layer::Cache,
     canvas::{self, layer, Canvas, Drawable, Fill, Frame, Path},
     executor,
     Application, Container, Element, Length, Point, Size, Color, Row, Command,
 };
-use sharmat::*;
+use sharmat::{
+    board::*,
+};
 
 #[derive(Debug)]
 pub struct Sharmat {
@@ -18,8 +21,6 @@ type Message = SharmatMessage;
 
 #[derive(Debug)]
 pub struct GBoard {
-    width: usize,
-    height: usize,
     pub board: Board,
     pub cache: Cache<Self>,
     pub fill_dark: Fill,
@@ -33,9 +34,7 @@ impl Application for Sharmat {
 
     fn new(_flags: Self::Flags) -> (Self, Command<Self::Message>) {
         (Self { board: GBoard {
-            width: 8,
-            height: 8,
-            board: Board,
+            board: Board::new(NonZeroUsize::new(32).unwrap(), NonZeroUsize::new(32).unwrap()),
             cache: Cache::new(),
             fill_dark: Fill::Color(Color::from_rgb8(226, 149, 120)),
             fill_light: Fill::Color(Color::from_rgb8(255, 221, 210))
@@ -67,12 +66,12 @@ impl Application for Sharmat {
 impl GBoard {
     #[inline]
     pub fn width(&self) -> usize {
-        self.width
+        self.board.width.into()
     }
 
     #[inline]
     pub fn height(&self) -> usize {
-        self.height
+        self.board.height.into()
     }
 
     pub fn view<'a>(&'a mut self) -> Element<'a, Message> {
@@ -86,12 +85,12 @@ impl GBoard {
 
 impl Drawable for GBoard {
     fn draw(&self, frame: &mut Frame) {
-        let mut tile_size =
-            (frame.width() / self.width as f32).min(frame.height() / self.height as f32);
+        let tile_size =
+            (frame.width() / self.width() as f32).min(frame.height() / self.height() as f32);
 
         let dark_tiles_path = Path::new(|p| {
-            for y in 0..self.height {
-                for x in 0..self.width {
+            for y in 0..self.height() {
+                for x in 0..self.width() {
                     if (x + y) % 2 == 0 {
                         p.rectangle(
                             Point::new(x as f32 * tile_size, y as f32 * tile_size),
