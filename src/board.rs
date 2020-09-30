@@ -2,11 +2,11 @@ use std::num::NonZeroUsize;
 use crate::piece::Piece;
 use self::BoardError::*;
 
-#[derive(Debug)]
-pub struct Board {
+#[derive(Debug, PartialEq, Eq)]
+pub struct Board<'a> {
     width: NonZeroUsize,
     height: NonZeroUsize,
-    board: Vec<Vec<Option<Piece>>>,
+    board: Vec<Vec<Option<&'a Piece>>>,
 }
 
 #[derive(Debug)]
@@ -16,7 +16,7 @@ pub enum BoardError {
 
 pub type BoardResult<T> = Result<T, BoardError>;
 
-impl Board {
+impl<'a> Board<'a> {
     pub fn new(width: NonZeroUsize, height: NonZeroUsize) -> Self {
         let mut board = Vec::with_capacity(width.get());
         for x in 0..width.get() {
@@ -32,7 +32,7 @@ impl Board {
         }
     }
 
-    pub fn set(&mut self, x: usize, y: usize, piece: Piece) -> BoardResult<()> {
+    pub fn set(&mut self, x: usize, y: usize, piece: &'a Piece) -> BoardResult<()> {
         let res_check_pos = self.check_pos(x, y);
         if res_check_pos.is_err() {
             return res_check_pos;
@@ -41,9 +41,9 @@ impl Board {
         Ok(())
     }
 
-    pub fn get(&self, x: usize, y: usize) -> BoardResult<&Option<Piece>> {
+    pub fn get(&self, x: usize, y: usize) -> BoardResult<Option<&Piece>> {
         self.check_pos(x, y)?;
-        Ok(&self.board[x][y])
+        Ok(self.board[x][y])
     }
 
     fn check_pos(&self, x: usize, y: usize) -> BoardResult<()> {
