@@ -36,7 +36,8 @@ impl Default for PieceBuilder {
                 .expect("How?")
                 .as_millis()
                 .to_string(),
-            ..Default::default()
+            piece_alias: String::new(),
+            piece_desc: String::new(),
         }
     }
 }
@@ -52,13 +53,17 @@ impl PieceBuilder {
     }
 
     pub fn alias(&mut self, alias: &str) -> &mut Self {
-        self.piece_alias.push_str("; ");
+        if !self.piece_alias.is_empty() {
+            self.piece_alias.push_str("; ");
+        }
         self.piece_alias.push_str(alias);
         self
     }
 
     pub fn desc(&mut self, desc: &str) -> &mut Self {
-        self.piece_desc.push('\n');
+        if !self.piece_desc.is_empty() {
+            self.piece_desc.push('\n');
+        }
         self.piece_desc.push_str(desc);
         self
     }
