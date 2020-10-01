@@ -11,7 +11,7 @@ pub struct Board<'a> {
 
 #[derive(Debug)]
 pub enum BoardError {
-    PieceOutOfBounds,
+    OutOfBounds,
 }
 
 pub type BoardResult<T> = Result<T, BoardError>;
@@ -70,7 +70,7 @@ impl<'a> Board<'a> {
 
     fn check_pos(&self, x: usize, y: usize) -> BoardResult<()> {
         if x >= self.width.get() - 1 || y >= self.height.get() - 1 {
-            return Err(PieceOutOfBounds);
+            return Err(OutOfBounds);
         }
         Ok(())
     }

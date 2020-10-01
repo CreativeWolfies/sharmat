@@ -4,8 +4,8 @@ use std::default::Default;
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Piece {
     piece_id: String,
-    piece_alias: String,
-    piece_desc: String,
+    piece_alias: String, // Update this!!!! (Vec<String>)
+    piece_desc: String, // And this!!!! (same)
 }
 
 impl Piece {

@@ -17,28 +17,51 @@ fn board_create() {
 #[allow(unused_must_use)]
 fn board_set_piece() {
     let mut board = Board::new(NonZeroUsize::new(9).unwrap(), NonZeroUsize::new(8).unwrap());
-    let piece = PieceBuilder::new().id("a").build();
+    let piece = PieceBuilder::new().build();
     board.set(0, 0, &piece);
+}
+
+#[test]
+fn board_oob_set_piece() {
+    let mut board = Board::new(NonZeroUsize::new(9).unwrap(), NonZeroUsize::new(8).unwrap());
+    let piece = PieceBuilder::new().build();
+    assert_eq!(board.set(20, 20, &piece).unwrap_err(), BoardError::OutOfBounds);
 }
 
 #[test]
 #[allow(unused_must_use)]
 fn board_get_piece() {
     let mut board = Board::new(NonZeroUsize::new(9).unwrap(), NonZeroUsize::new(8).unwrap());
-    let piece = PieceBuilder::new()
-        .id("b")
-        .build();
+    let piece = PieceBuilder::new().build();
     board.set(0, 0, &piece);
     assert_eq!(board.get(0, 0).unwrap().map(|x| x.clone()), Some(piece));
 }
 
 #[test]
+fn board_oob_get_piece() {
+    let board = Board::new(NonZeroUsize::new(3).unwrap(), NonZeroUsize::new(3).unwrap());
+    assert_eq!(board.get(5, 5).unwrap_err(), BoardError::OutOfBounds);
+}
+
+#[test]
 fn board_move_piece() {
     let mut board = Board::new(NonZeroUsize::new(9).unwrap(), NonZeroUsize::new(8).unwrap());
-    let piece = PieceBuilder::new().id("c").build();
+    let piece = PieceBuilder::new().build();
     board.set(0, 0, &piece);
     board.move_piece(0, 0, 3, 3);
     assert_eq!(board.get(3, 3).unwrap().map(|x| x.clone()), Some(piece));
+}
+
+#[test]
+fn board_oob_move_piece_first_pos() {
+    let mut board = Board::new(NonZeroUsize::new(5).unwrap(), NonZeroUsize::new(5).unwrap());
+    assert_eq!(board.move_piece(6, 6, 0, 0).unwrap_err(), BoardError::OutOfBounds);
+}
+
+#[test]
+fn board_oob_move_piece_scnd_pos() {
+    let mut board = Board::new(NonZeroUsize::new(5).unwrap(), NonZeroUsize::new(5).unwrap());
+    assert_eq!(board.move_piece(0, 0, 6, 6).unwrap_err(), BoardError::OutOfBounds);
 }
 
 #[test]
@@ -51,10 +74,16 @@ fn board_clear_piece() {
 }
 
 #[test]
+fn board_oob_clear_piece() {
+    let mut board = Board::new(NonZeroUsize::new(5).unwrap(), NonZeroUsize::new(5).unwrap());
+    assert_eq!(board.clear_pos(6, 6).unwrap_err(), BoardError::OutOfBounds);
+}
+
+#[test]
 fn board_clear_board() {
     let empty_board = Board::new(NonZeroUsize::new(5).unwrap(), NonZeroUsize::new(5).unwrap());
     let mut board = Board::new(NonZeroUsize::new(5).unwrap(), NonZeroUsize::new(5).unwrap());
-    let piece = PieceBuilder::new().id("e").build();
+    let piece = PieceBuilder::new().build();
     board.set(0, 0, &piece);
     board.set(0, 3, &piece);
     board.set(3, 0, &piece);
@@ -152,5 +181,209 @@ fn rule_create() {
 
 #[test]
 fn game_create() {
-    let _game = Game::new(/* UNKNOWN */);
+    let _game = GameBuilder::new();
+}
+
+#[test]
+fn game_create_with_board() {
+    let board = Board::new(NonZeroUsize::new(5).unwrap(), NonZeroUsize::new(5).unwrap());
+    let game = GameBuilder::new()
+        .board(&board)
+        .build();
+}
+
+#[test]
+fn game_create_with_board_push() {
+    let board = Board::new(NonZeroUsize::new(5).unwrap(), NonZeroUsize::new(5).unwrap());
+    let board2 = Board::new(NonZeroUsize::new(5).unwrap(), NonZeroUsize::new(5).unwrap());
+    let game = GameBuilder::new()
+        .board(&board)
+        .board(&board2)
+        .build();
+}
+
+#[test]
+fn game_create_with_boards_push() {
+    let board = Board::new(NonZeroUsize::new(5).unwrap(), NonZeroUsize::new(5).unwrap());
+    let board2 = Board::new(NonZeroUsize::new(5).unwrap(), NonZeroUsize::new(5).unwrap());
+    let game = GameBuilder::new()
+        .boards(vec![&board, &board2])
+        .build();
+}
+
+#[test]
+fn game_create_with_board_and_boards() {
+    let board = Board::new(NonZeroUsize::new(5).unwrap(), NonZeroUsize::new(5).unwrap());
+    let board2 = Board::new(NonZeroUsize::new(5).unwrap(), NonZeroUsize::new(5).unwrap());
+    let board3 = Board::new(NonZeroUsize::new(5).unwrap(), NonZeroUsize::new(5).unwrap());
+    let game = GameBuilder::new()
+        .board(&board)
+        .boards(vec![&board2, &board3])
+        .build();
+}
+
+#[test]
+fn game_get_boards_with_board() {
+    let board = Board::new(NonZeroUsize::new(5).unwrap(), NonZeroUsize::new(5).unwrap());
+    let game = GameBuilder::new()
+        .board(&board)
+        .build();
+    assert_eq!(game.boards(), vec![&board]);
+}
+
+#[test]
+fn game_get_boards_with_board_push() {
+    let board = Board::new(NonZeroUsize::new(5).unwrap(), NonZeroUsize::new(5).unwrap());
+    let board2 = Board::new(NonZeroUsize::new(5).unwrap(), NonZeroUsize::new(5).unwrap());
+    let game = GameBuilder::new()
+        .board(&board)
+        .board(&board2)
+        .build();
+    assert_eq!(game.boards(), vec![&board, &board2]);
+}
+
+#[test]
+fn game_get_boards_with_boards_push() {
+    let board = Board::new(NonZeroUsize::new(5).unwrap(), NonZeroUsize::new(5).unwrap());
+    let board2 = Board::new(NonZeroUsize::new(5).unwrap(), NonZeroUsize::new(5).unwrap());
+    let game = GameBuilder::new()
+        .boards(vec![&board, &board2])
+        .build();
+    assert_eq!(game.boards(), vec![&board, &board2]);
+}
+
+#[test]
+fn game_get_boards_with_board_and_boards_push() {
+    let board = Board::new(NonZeroUsize::new(5).unwrap(), NonZeroUsize::new(5).unwrap());
+    let board2 = Board::new(NonZeroUsize::new(5).unwrap(), NonZeroUsize::new(5).unwrap());
+    let board3 = Board::new(NonZeroUsize::new(5).unwrap(), NonZeroUsize::new(5).unwrap());
+    let game = GameBuilder::new()
+        .board(&board)
+        .boards(vec![&board2, &board3])
+        .build();
+    assert_eq!(game.boards(), vec![&board, &board2, &board3]);
+}
+
+#[test]
+fn game_create_with_piece() {
+    let piece = PieceBuilder::new().build();
+    let game = GameBuilder::new()
+        .piece(&piece)
+        .build();
+}
+
+#[test]
+fn game_create_with_piece_push() {
+    let piece = PieceBuilder::new().build();
+    let piece2 = PieceBuilder::new().build();
+    let game = GameBuilder::new()
+        .piece(&piece)
+        .piece(&piece2)
+        .build();
+}
+
+#[test]
+fn game_create_with_pieces_push() {
+    let piece = PieceBuilder::new().build();
+    let piece2 = PieceBuilder::new().build();
+    let game = GameBuilder::new()
+        .pieces(vec![&piece, &piece2])
+        .build();
+}
+
+#[test]
+fn game_create_with_piece_and_pieces_push() {
+    let piece = PieceBuilder::new().build();
+    let piece2 = PieceBuilder::new().build();
+    let piece3 = PieceBuilder::new().build();
+    let game = GameBuilder::new()
+        .piece(&piece)
+        .pieces(vec![&piece2, &piece3])
+        .build();
+}
+
+#[test]
+fn game_get_pieces_with_piece() {
+    let piece = PieceBuilder::new().build();
+    let game = GameBuilder::new()
+        .piece(&piece)
+        .build();
+    assert_eq!(game.pieces(), vec![&piece]);
+}
+
+#[test]
+fn game_get_pieces_with_piece_push() {
+    let piece = PieceBuilder::new().build();
+    let piece2 = PieceBuilder::new().build();
+    let game = GameBuilder::new()
+        .piece(&piece)
+        .piece(&piece2)
+        .build();
+    assert_eq!(game.pieces(), vec![&piece, &piece2]);
+}
+
+#[test]
+fn game_get_pieces_with_pieces_push() {
+    let piece = PieceBuilder::new().build();
+    let piece2 = PieceBuilder::new().build();
+    let game = GameBuilder::new()
+        .pieces(vec![&piece, &piece2])
+        .build();
+    assert_eq!(game.pieces(), vec![&piece, &piece2]);
+}
+
+#[test]
+fn game_get_pieces_with_piece_and_pieces_push() {
+    let piece = PieceBuilder::new().build();
+    let piece2 = PieceBuilder::new().build();
+    let piece3 = PieceBuilder::new().build();
+    let game = GameBuilder::new()
+        .piece(&piece)
+        .pieces(vec![&piece2, &piece3])
+        .build();
+    assert_eq!(game.pieces(), vec![&piece, &piece2, &piece3]);
+}
+
+#[test]
+fn game_search_piece_by_id_success() {
+    let piece = PieceBuilder::new().build();
+    let piece2 = PieceBuilder::new().build();
+    let piece3 = PieceBuilder::new().build();
+    let game = GameBuilder::new()
+        .pieces(vec![&piece, &piece2, &piece3])
+        .build();
+    assert_eq!(game.search(piece.id()), Some(&piece));
+}
+
+#[test]
+fn game_search_piece_by_id_fail() {
+    let piece = PieceBuilder::new().build();
+    let piece2 = PieceBuilder::new().build();
+    let piece3 = PieceBuilder::new().build();
+    let game = GameBuilder::new()
+        .pieces(vec![&piece, &piece2, &piece3])
+        .build();
+    assert_eq!(game.search("random"), None);
+}
+
+#[test]
+fn game_search_piece_by_alias_success() {
+    let piece = PieceBuilder::new().alias("test").build();
+    let piece2 = PieceBuilder::new().alias("foo").alias("test").build();
+    let piece3 = PieceBuilder::new().build();
+    let game = GameBuilder::new()
+        .pieces(vec![&piece, &piece2, &piece3])
+        .build();
+    assert_eq!(game.search_alias("test"), Some(vec![&piece, &piece2]));
+}
+
+#[test]
+fn game_search_piece_by_alias_fail() {
+    let piece = PieceBuilder::new().alias("test").build();
+    let piece2 = PieceBuilder::new().alias("foo").alias("test").build();
+    let piece3 = PieceBuilder::new().build();
+    let game = GameBuilder::new()
+        .pieces(vec![&piece, &piece2, &piece3])
+        .build();
+    assert_eq!(game.search_alias("hmm"), None);
 }
