@@ -46,6 +46,28 @@ impl<'a> Board<'a> {
         Ok(self.board[x][y])
     }
 
+    pub fn move_piece(&mut self, x: usize, y: usize, dx: usize, dy: usize) -> BoardResult<()> {
+        self.check_pos(x, y)?;
+        self.check_pos(dx, dy)?;
+        self.board[dx][dy] = self.board[x][y];
+        self.board[x][y] = None;
+        Ok(())
+    }
+
+    pub fn clear_pos(&mut self, x: usize, y: usize) -> BoardResult<()> {
+        self.check_pos(x, y)?;
+        self.board[x][y] = None;
+        Ok(())
+    }
+
+    pub fn clear(&mut self) {
+        self.board.iter_mut().for_each(|column| {
+            column.iter_mut().for_each(|cell| {
+                *cell = None;
+            });
+        });
+    }
+
     fn check_pos(&self, x: usize, y: usize) -> BoardResult<()> {
         if x >= self.width.get() - 1 || y >= self.height.get() - 1 {
             return Err(PieceOutOfBounds);

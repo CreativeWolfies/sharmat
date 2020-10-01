@@ -17,32 +17,35 @@ fn board_create() {
 #[allow(unused_must_use)]
 fn board_set_piece() {
     let mut board = Board::new(NonZeroUsize::new(9).unwrap(), NonZeroUsize::new(8).unwrap());
-    board.set(0, 0, PieceBuilder::new().id("a").build());
+    let piece = PieceBuilder::new().id("a").build();
+    board.set(0, 0, &piece);
 }
 
 #[test]
 #[allow(unused_must_use)]
 fn board_get_piece() {
     let mut board = Board::new(NonZeroUsize::new(9).unwrap(), NonZeroUsize::new(8).unwrap());
-    let piece = PieceBuilder::new().id("a").build();
-    board.set(0, 0, piece.clone());
+    let piece = PieceBuilder::new()
+        .id("b")
+        .build();
+    board.set(0, 0, &piece);
     assert_eq!(board.get(0, 0).unwrap().map(|x| x.clone()), Some(piece));
 }
 
 #[test]
 fn board_move_piece() {
     let mut board = Board::new(NonZeroUsize::new(9).unwrap(), NonZeroUsize::new(8).unwrap());
-    let piece = PieceBuilder::new().id("a").build();
-    board.set(0, 0, piece.clone());
-    board.move(0, 0, 3, 3);
+    let piece = PieceBuilder::new().id("c").build();
+    board.set(0, 0, &piece);
+    board.move_piece(0, 0, 3, 3);
     assert_eq!(board.get(3, 3).unwrap().map(|x| x.clone()), Some(piece));
 }
 
 #[test]
 fn board_clear_piece() {
     let mut board = Board::new(NonZeroUsize::new(9).unwrap(), NonZeroUsize::new(8).unwrap());
-    let piece = PieceBuilder::new().id("a").build();
-    board.set(0, 0, piece.clone());
+    let piece = PieceBuilder::new().id("d").build();
+    board.set(0, 0, &piece);
     board.clear_pos(0, 0);
     assert_eq!(board.get(0, 0).unwrap(), None);
 }
@@ -51,9 +54,10 @@ fn board_clear_piece() {
 fn board_clear_board() {
     let empty_board = Board::new(NonZeroUsize::new(5).unwrap(), NonZeroUsize::new(5).unwrap());
     let mut board = Board::new(NonZeroUsize::new(5).unwrap(), NonZeroUsize::new(5).unwrap());
-    board.set(0, 0, PieceBuilder::new().id("a").build());
-    board.set(0, 3, PieceBuilder::new().id("a").build());
-    board.set(3, 0, PieceBuilder::new().id("a").build());
+    let piece = PieceBuilder::new().id("e").build();
+    board.set(0, 0, &piece);
+    board.set(0, 3, &piece);
+    board.set(3, 0, &piece);
     board.clear();
     assert_eq!(board, empty_board);
 }
