@@ -44,6 +44,7 @@ fn board_oob_get_piece() {
 }
 
 #[test]
+#[allow(unused_must_use)]
 fn board_move_piece() {
     let mut board = Board::new(NonZeroUsize::new(9).unwrap(), NonZeroUsize::new(8).unwrap());
     let piece = PieceBuilder::new().build();
@@ -65,6 +66,7 @@ fn board_oob_move_piece_scnd_pos() {
 }
 
 #[test]
+#[allow(unused_must_use)]
 fn board_clear_piece() {
     let mut board = Board::new(NonZeroUsize::new(9).unwrap(), NonZeroUsize::new(8).unwrap());
     let piece = PieceBuilder::new().id("d").build();
@@ -80,6 +82,7 @@ fn board_oob_clear_piece() {
 }
 
 #[test]
+#[allow(unused_must_use)]
 fn board_clear_board() {
     let empty_board = Board::new(NonZeroUsize::new(5).unwrap(), NonZeroUsize::new(5).unwrap());
     let mut board = Board::new(NonZeroUsize::new(5).unwrap(), NonZeroUsize::new(5).unwrap());
@@ -187,7 +190,7 @@ fn game_create() {
 #[test]
 fn game_create_with_board() {
     let board = Board::new(NonZeroUsize::new(5).unwrap(), NonZeroUsize::new(5).unwrap());
-    let game = GameBuilder::new()
+    let _game = GameBuilder::new()
         .board(&board)
         .build();
 }
@@ -196,7 +199,7 @@ fn game_create_with_board() {
 fn game_create_with_board_push() {
     let board = Board::new(NonZeroUsize::new(5).unwrap(), NonZeroUsize::new(5).unwrap());
     let board2 = Board::new(NonZeroUsize::new(5).unwrap(), NonZeroUsize::new(5).unwrap());
-    let game = GameBuilder::new()
+    let _game = GameBuilder::new()
         .board(&board)
         .board(&board2)
         .build();
@@ -206,7 +209,7 @@ fn game_create_with_board_push() {
 fn game_create_with_boards_push() {
     let board = Board::new(NonZeroUsize::new(5).unwrap(), NonZeroUsize::new(5).unwrap());
     let board2 = Board::new(NonZeroUsize::new(5).unwrap(), NonZeroUsize::new(5).unwrap());
-    let game = GameBuilder::new()
+    let _game = GameBuilder::new()
         .boards(vec![&board, &board2])
         .build();
 }
@@ -216,7 +219,7 @@ fn game_create_with_board_and_boards() {
     let board = Board::new(NonZeroUsize::new(5).unwrap(), NonZeroUsize::new(5).unwrap());
     let board2 = Board::new(NonZeroUsize::new(5).unwrap(), NonZeroUsize::new(5).unwrap());
     let board3 = Board::new(NonZeroUsize::new(5).unwrap(), NonZeroUsize::new(5).unwrap());
-    let game = GameBuilder::new()
+    let _game = GameBuilder::new()
         .board(&board)
         .boards(vec![&board2, &board3])
         .build();
@@ -228,7 +231,7 @@ fn game_get_boards_with_board() {
     let game = GameBuilder::new()
         .board(&board)
         .build();
-    assert_eq!(game.boards(), vec![&board]);
+    assert_eq!(game.boards(), &vec![&board]);
 }
 
 #[test]
@@ -239,7 +242,7 @@ fn game_get_boards_with_board_push() {
         .board(&board)
         .board(&board2)
         .build();
-    assert_eq!(game.boards(), vec![&board, &board2]);
+    assert_eq!(*game.boards(), vec![&board, &board2]);
 }
 
 #[test]
@@ -249,7 +252,7 @@ fn game_get_boards_with_boards_push() {
     let game = GameBuilder::new()
         .boards(vec![&board, &board2])
         .build();
-    assert_eq!(game.boards(), vec![&board, &board2]);
+    assert_eq!(*game.boards(), vec![&board, &board2]);
 }
 
 #[test]
@@ -261,13 +264,13 @@ fn game_get_boards_with_board_and_boards_push() {
         .board(&board)
         .boards(vec![&board2, &board3])
         .build();
-    assert_eq!(game.boards(), vec![&board, &board2, &board3]);
+    assert_eq!(*game.boards(), vec![&board, &board2, &board3]);
 }
 
 #[test]
 fn game_create_with_piece() {
     let piece = PieceBuilder::new().build();
-    let game = GameBuilder::new()
+    let _game = GameBuilder::new()
         .piece(&piece)
         .build();
 }
@@ -276,7 +279,7 @@ fn game_create_with_piece() {
 fn game_create_with_piece_push() {
     let piece = PieceBuilder::new().build();
     let piece2 = PieceBuilder::new().build();
-    let game = GameBuilder::new()
+    let _game = GameBuilder::new()
         .piece(&piece)
         .piece(&piece2)
         .build();
@@ -286,7 +289,7 @@ fn game_create_with_piece_push() {
 fn game_create_with_pieces_push() {
     let piece = PieceBuilder::new().build();
     let piece2 = PieceBuilder::new().build();
-    let game = GameBuilder::new()
+    let _game = GameBuilder::new()
         .pieces(vec![&piece, &piece2])
         .build();
 }
@@ -296,7 +299,7 @@ fn game_create_with_piece_and_pieces_push() {
     let piece = PieceBuilder::new().build();
     let piece2 = PieceBuilder::new().build();
     let piece3 = PieceBuilder::new().build();
-    let game = GameBuilder::new()
+    let _game = GameBuilder::new()
         .piece(&piece)
         .pieces(vec![&piece2, &piece3])
         .build();
@@ -308,7 +311,7 @@ fn game_get_pieces_with_piece() {
     let game = GameBuilder::new()
         .piece(&piece)
         .build();
-    assert_eq!(game.pieces(), vec![&piece]);
+    assert_eq!(*game.pieces(), vec![&piece]);
 }
 
 #[test]
@@ -319,7 +322,7 @@ fn game_get_pieces_with_piece_push() {
         .piece(&piece)
         .piece(&piece2)
         .build();
-    assert_eq!(game.pieces(), vec![&piece, &piece2]);
+    assert_eq!(*game.pieces(), vec![&piece, &piece2]);
 }
 
 #[test]
@@ -329,7 +332,7 @@ fn game_get_pieces_with_pieces_push() {
     let game = GameBuilder::new()
         .pieces(vec![&piece, &piece2])
         .build();
-    assert_eq!(game.pieces(), vec![&piece, &piece2]);
+    assert_eq!(*game.pieces(), vec![&piece, &piece2]);
 }
 
 #[test]
@@ -341,7 +344,7 @@ fn game_get_pieces_with_piece_and_pieces_push() {
         .piece(&piece)
         .pieces(vec![&piece2, &piece3])
         .build();
-    assert_eq!(game.pieces(), vec![&piece, &piece2, &piece3]);
+    assert_eq!(*game.pieces(), vec![&piece, &piece2, &piece3]);
 }
 
 #[test]
@@ -352,7 +355,7 @@ fn game_search_piece_by_id_success() {
     let game = GameBuilder::new()
         .pieces(vec![&piece, &piece2, &piece3])
         .build();
-    assert_eq!(game.search(piece.id()), Some(&piece));
+    assert_eq!(game.search_piece(piece.id()), Some(&&piece));
 }
 
 #[test]
@@ -363,7 +366,7 @@ fn game_search_piece_by_id_fail() {
     let game = GameBuilder::new()
         .pieces(vec![&piece, &piece2, &piece3])
         .build();
-    assert_eq!(game.search("random"), None);
+    assert_eq!(game.search_piece("random"), None);
 }
 
 #[test]
@@ -374,7 +377,7 @@ fn game_search_piece_by_alias_success() {
     let game = GameBuilder::new()
         .pieces(vec![&piece, &piece2, &piece3])
         .build();
-    assert_eq!(game.search_alias("test"), Some(vec![&piece, &piece2]));
+    assert_eq!(game.search_piece_alias("test"), vec![&&piece, &&piece2]);
 }
 
 #[test]
@@ -385,5 +388,5 @@ fn game_search_piece_by_alias_fail() {
     let game = GameBuilder::new()
         .pieces(vec![&piece, &piece2, &piece3])
         .build();
-    assert_eq!(game.search_alias("hmm"), None);
+    assert_eq!(game.search_piece_alias("hmm"), Vec::<&&Piece>::new());
 }

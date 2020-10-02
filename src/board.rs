@@ -9,7 +9,7 @@ pub struct Board<'a> {
     board: Vec<Vec<Option<&'a Piece>>>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum BoardError {
     OutOfBounds,
 }
