@@ -4,8 +4,8 @@ use self::BoardError::*;
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct Board<'a> {
-    width: NonZeroUsize,
-    height: NonZeroUsize,
+    pub width: NonZeroUsize,
+    pub height: NonZeroUsize,
     board: Vec<Vec<Option<&'a Piece>>>,
 }
 
