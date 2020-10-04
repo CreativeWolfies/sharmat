@@ -2,7 +2,7 @@ use std::num::NonZeroUsize;
 use crate::piece::Piece;
 use self::BoardError::*;
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Hash)]
 pub struct Board<'a> {
     pub width: NonZeroUsize,
     pub height: NonZeroUsize,

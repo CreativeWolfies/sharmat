@@ -1,6 +1,8 @@
 // The ~client~ (the thing that displays pieces & stuff)
 
 extern crate iced;
+extern crate iced_native;
+extern crate iced_wgpu;
 
 use iced::{Application, Settings};
 
