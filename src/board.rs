@@ -11,7 +11,7 @@ pub struct Board<'a> {
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum BoardError {
-    OutOfBounds,
+    OutOfBounds(usize, usize),
 }
 
 pub type BoardResult<T> = Result<T, BoardError>;
@@ -70,8 +70,17 @@ impl<'a> Board<'a> {
 
     fn check_pos(&self, x: usize, y: usize) -> BoardResult<()> {
         if x >= self.width.get() || y >= self.height.get() {
-            return Err(OutOfBounds);
+            println!("{}:{} / {}:{}", x, self.width.get(), y, self.height.get());
+            return Err(OutOfBounds(x, y));
         }
         Ok(())
+    }
+
+    pub fn set_name(&mut self, name: &'a str) {
+        unimplemented!();
+    }
+
+    pub fn name(&self) -> &'a str {
+        unimplemented!();
     }
 }

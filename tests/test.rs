@@ -6,6 +6,7 @@ use sharmat::piece::*;
 use sharmat::rule::*;
 use sharmat::game::*;
 use sharmat::movement::*;
+use sharmat::player::*;
 
 // Engine basic tests
 
@@ -43,15 +44,15 @@ mod board {
     fn board_oob_set_piece() {
         let mut board = Board::new(NonZeroUsize::new(9).unwrap(), NonZeroUsize::new(8).unwrap());
         let piece = PieceBuilder::new().build();
-        assert_eq!(board.set(20, 20, &piece).unwrap_err(), BoardError::OutOfBounds);
+        assert_eq!(board.set(20, 20, &piece).unwrap_err(), BoardError::OutOfBounds(20, 20));
     }
 
     #[test]
     #[allow(unused_must_use)]
     fn board_get_piece() {
-        let mut board = Board::new(NonZeroUsize::new(9).unwrap(), NonZeroUsize::new(8).unwrap());
         for x in 0..9 {
-            for y in 0..9 {
+            for y in 0..8 {
+                let mut board = Board::new(NonZeroUsize::new(9).unwrap(), NonZeroUsize::new(8).unwrap());
                 let piece = PieceBuilder::new().build();
                 board.set(x, y, &piece);
                 assert_eq!(board.get(x, y).unwrap().map(|z| z.clone()), Some(piece));
@@ -62,7 +63,7 @@ mod board {
     #[test]
     fn board_oob_get_piece() {
         let board = Board::new(NonZeroUsize::new(3).unwrap(), NonZeroUsize::new(3).unwrap());
-        assert_eq!(board.get(5, 5).unwrap_err(), BoardError::OutOfBounds);
+        assert_eq!(board.get(5, 5).unwrap_err(), BoardError::OutOfBounds(5, 5));
     }
 
     #[test]
@@ -71,20 +72,20 @@ mod board {
         let mut board = Board::new(NonZeroUsize::new(9).unwrap(), NonZeroUsize::new(8).unwrap());
         let piece = PieceBuilder::new().build();
         board.set(0, 0, &piece);
-        board.step_piece(0, 0, 3, 3);
+        board.move_piece(0, 0, 3, 3);
         assert_eq!(board.get(3, 3).unwrap().map(|x| x.clone()), Some(piece));
     }
 
     #[test]
     fn board_oob_move_piece_first_pos() {
         let mut board = Board::new(NonZeroUsize::new(5).unwrap(), NonZeroUsize::new(5).unwrap());
-        assert_eq!(board.step_piece(6, 6, 0, 0).unwrap_err(), BoardError::OutOfBounds);
+        assert_eq!(board.move_piece(6, 6, 0, 0).unwrap_err(), BoardError::OutOfBounds(6, 6));
     }
 
     #[test]
     fn board_oob_move_piece_scnd_pos() {
         let mut board = Board::new(NonZeroUsize::new(5).unwrap(), NonZeroUsize::new(5).unwrap());
-        assert_eq!(board.step_piece(0, 0, 6, 6).unwrap_err(), BoardError::OutOfBounds);
+        assert_eq!(board.move_piece(0, 0, 6, 6).unwrap_err(), BoardError::OutOfBounds(6, 6));
     }
 
     #[test]
@@ -100,7 +101,7 @@ mod board {
     #[test]
     fn board_oob_clear_piece() {
         let mut board = Board::new(NonZeroUsize::new(5).unwrap(), NonZeroUsize::new(5).unwrap());
-        assert_eq!(board.clear_pos(6, 6).unwrap_err(), BoardError::OutOfBounds);
+        assert_eq!(board.clear_pos(6, 6).unwrap_err(), BoardError::OutOfBounds(6, 6));
     }
 
     #[test]
@@ -297,7 +298,7 @@ mod movement {
             .add_mul(vec![MovementType::Step(Direction::Up), MovementType::Step(Direction::Down)])
             .add(MovementType::Step(Direction::UpRight))
             .build();
-        assert_eq!(movement.get_all(), vec![MovementType::Step(Direction::Up), MovementType::Step(Direction::Down), MovementType::Step(1, 1)]);
+        assert_eq!(movement.get_all(), vec![MovementType::Step(Direction::Up), MovementType::Step(Direction::Down), MovementType::Step(Direction::UpRight)]);
     }
 
     #[test]
@@ -332,20 +333,20 @@ mod movement {
             .add(MovementType::Step(Direction::Up))
             .add(MovementType::Jump(1, 2))
             .add(MovementType::Jump(-1, -2))
-            .add(MovementType::Range(DirectionAndRange::Direction(Direction::Up)))
-            .add(MovementType::Range(DirectionAndRange::Range(Range::Diagonal)))
-            .add(MovementType::Range(DirectionAndRange::Range(Range::Orthogonal)))
-            .add(MovementType::LimitedRange(DirectionAndRange::Direction(Direction::Down), 3))
+            .add(MovementType::Range(vec![DirectionAndRange::Direction(Direction::Up)]))
+            .add(MovementType::Range(vec![DirectionAndRange::Range(Range::Diagonal)]))
+            .add(MovementType::Range(vec![DirectionAndRange::Range(Range::Orthogonal)]))
+            .add(MovementType::LimitedRange(vec![DirectionAndRange::Direction(Direction::Down)], 3))
             .build();
         assert_eq!(movement.get_all(), vec![
             MovementType::Stay,
             MovementType::Step(Direction::Up),
             MovementType::Jump(1, 2),
             MovementType::Jump(-1, -2),
-            MovementType::Range(DirectionAndRange::Direction(Direction::Up)),
-            MovementType::Range(DirectionAndRange::Range(Range::Diagonal)),
-            MovementType::Range(DirectionAndRange::Range(Range::Orthogonal)),
-            MovementType::LimitedRange(DirectionAndRange::Direction(Direction::Down), 3)
+            MovementType::Range(vec![DirectionAndRange::Direction(Direction::Up)]),
+            MovementType::Range(vec![DirectionAndRange::Range(Range::Diagonal)]),
+            MovementType::Range(vec![DirectionAndRange::Range(Range::Orthogonal)]),
+            MovementType::LimitedRange(vec![DirectionAndRange::Direction(Direction::Down)], 3)
         ]);
     }
 
@@ -357,8 +358,8 @@ mod movement {
             .jump(1, 2)
             .jump(-1, -2)
             .range(DirectionAndRange::Direction(Direction::Up))
-            .range(DirectionAndRange::Direction(Range::Diagonal))
-            .range(DirectionAndRange::Direction(Range::Orthogonal))
+            .range(DirectionAndRange::Range(Range::Diagonal))
+            .range(DirectionAndRange::Range(Range::Orthogonal))
             .limited_range(DirectionAndRange::Direction(Direction::Down), 3)
             .build();
         assert_eq!(movement.get_all(), vec![
@@ -366,33 +367,33 @@ mod movement {
             MovementType::Step(Direction::Up),
             MovementType::Jump(1, 2),
             MovementType::Jump(-1, -2),
-            MovementType::Range(DirectionAndRange::Direction(Direction::Up)),
-            MovementType::Range(DirectionAndRange::Range(Range::Diagonal)),
-            MovementType::Range(DirectionAndRange::Range(Range::Orthogonal)),
-            MovementType::LimitedRange(DirectionAndRange::Direction(Direction::Down), 3)
+            MovementType::Range(vec![DirectionAndRange::Direction(Direction::Up)]),
+            MovementType::Range(vec![DirectionAndRange::Range(Range::Diagonal)]),
+            MovementType::Range(vec![DirectionAndRange::Range(Range::Orthogonal)]),
+            MovementType::LimitedRange(vec![DirectionAndRange::Direction(Direction::Down)], 3)
         ]);
     }
 
     #[test]
     fn movement_create_with_recursive_moves_enum() {
         let movement = MovementBuilder::new()
-            .add(MovementType::Repeat(MovementType::Jump(1, 2), 3))
-            .add(MovementType::CustomRange(MovementType::Jump(0, 3)))
-            .add(MovementType::Composition(vec![MovementType::Jump(2, 2), MovementType::Range(DirectionAndRange::Range(Range::Orthogonal))]))
+            .add(MovementType::Repeat(Box::new(MovementType::Jump(1, 2)), 3))
+            .add(MovementType::CustomRange(Box::new(MovementType::Jump(0, 3))))
+            .add(MovementType::Composition(vec![MovementType::Jump(2, 2), MovementType::Range(vec![DirectionAndRange::Range(Range::Orthogonal)])]))
             // .add(MovementType::ConditionalMove(MovementType::Jump(0, 3), Box::new(|piece, _| piece.id() == "silver_general")))
-            .add(MovementType::OnlyCapture(MovementType::Jump(-2, 2)))
-            .add(MovementType::CaptureAndMove(MovementType::Jump(2, 2)))
-            .add(MovementType::CaptureWithoutMoving(MovementType::Jump(3, 3)))
+            .add(MovementType::OnlyCapture(Box::new(MovementType::Jump(-2, 2))))
+            .add(MovementType::CaptureAndMove(Box::new(MovementType::Jump(2, 2))))
+            .add(MovementType::CaptureWithoutMoving(Box::new(MovementType::Jump(3, 3))))
             .build();
         // ConditionalMove can't be tested because closure (Fn) don't implement Eq
         assert_eq!(movement.get_all(), vec![
-            MovementType::Repeat(MovementType::Jump(1, 2), 3),
-            MovementType::CustomRange(MovementType::Jump(0, 3)),
-            MovementType::Composition(vec![MovementType::Jump(2, 2), MovementType::Range(DirectionAndRange::Range(Range::Orthogonal))]),
+            MovementType::Repeat(Box::new(MovementType::Jump(1, 2)), 3),
+            MovementType::CustomRange(Box::new(MovementType::Jump(0, 3))),
+            MovementType::Composition(vec![MovementType::Jump(2, 2), MovementType::Range(vec![DirectionAndRange::Range(Range::Orthogonal)])]),
             // MovementType::ConditionalMove(MovementType::Jump(0, 3), Box::new(|piece, _| piece.id() == "silver_general")),
-            MovementType::OnlyCapture(MovementType::Jump(-2, 2)),
-            MovementType::CaptureAndMove(MovementType::Jump(2, 2)),
-            MovementType::CaptureWithoutMoving(MovementType::Jump(3, 3))
+            MovementType::OnlyCapture(Box::new(MovementType::Jump(-2, 2))),
+            MovementType::CaptureAndMove(Box::new(MovementType::Jump(2, 2))),
+            MovementType::CaptureWithoutMoving(Box::new(MovementType::Jump(3, 3)))
         ]);
     }
 
@@ -401,7 +402,7 @@ mod movement {
         let movement = MovementBuilder::new()
             .repeat(MovementType::Jump(1, 2), 3)
             .custom_range(MovementType::Jump(0, 3))
-            .composition(vec![MovementType::Jump(2, 2), MovementType::Range(DirectionAndRange::Range(Range::Orthogonal))])
+            .composition(vec![MovementType::Jump(2, 2), MovementType::Range(vec![DirectionAndRange::Range(Range::Orthogonal)])])
             // .conditional_move(MovementType::Jump(0, 3), Box::new(|piece, _| piece.id() == "silver_general"))
             .only_capture(MovementType::Jump(-2, 2))
             .capture_and_move(MovementType::Jump(2, 2))
@@ -409,13 +410,13 @@ mod movement {
             .build();
         // ConditionalMove can't be tested because closure (Fn) don't implement Eq
         assert_eq!(movement.get_all(), vec![
-            MovementType::Repeat(MovementType::Jump(1, 2), 3),
-            MovementType::CustomRange(MovementType::Jump(0, 3)),
-            MovementType::Composition(vec![MovementType::Jump(2, 2), MovementType::Range(DirectionAndRange::Range(Range::Orthogonal))]),
+            MovementType::Repeat(Box::new(MovementType::Jump(1, 2)), 3),
+            MovementType::CustomRange(Box::new(MovementType::Jump(0, 3))),
+            MovementType::Composition(vec![MovementType::Jump(2, 2), MovementType::Range(vec![DirectionAndRange::Range(Range::Orthogonal)])]),
             // MovementType::ConditionalMove(MovementType::Jump(0, 3), Box::new(|piece, _| piece.id() == "silver_general")),
-            MovementType::OnlyCapture(MovementType::Jump(-2, 2)),
-            MovementType::CaptureAndMove(MovementType::Jump(2, 2)),
-            MovementType::CaptureWithoutMoving(MovementType::Jump(3, 3))
+            MovementType::OnlyCapture(Box::new(MovementType::Jump(-2, 2))),
+            MovementType::CaptureAndMove(Box::new(MovementType::Jump(2, 2))),
+            MovementType::CaptureWithoutMoving(Box::new(MovementType::Jump(3, 3)))
         ]);
     }
 
@@ -440,13 +441,13 @@ mod movement {
             .build();
         // ConditionalMove can't be tested because closure (Fn) don't implement Eq
         assert_eq!(movement.get_all(), vec![
-            MovementType::Repeat(MovementType::Jump(1, 2), 3),
-            MovementType::CustomRange(MovementType::Jump(0, 3)),
-            MovementType::Composition(vec![MovementType::Jump(2, 2), MovementType::Range(DirectionAndRange::Range(Range::Orthogonal))]),
+                MovementType::Repeat(Box::new(MovementType::Jump(1, 2)), 3),
+                MovementType::CustomRange(Box::new(MovementType::Jump(0, 3))),
+                MovementType::Composition(vec![MovementType::Jump(2, 2), MovementType::Range(vec![DirectionAndRange::Range(Range::Orthogonal)])]),
             // MovementType::ConditionalMove(MovementType::Jump(0, 3), Box::new(|piece, _| piece.id() == "silver_general")),
-            MovementType::OnlyCapture(MovementType::Jump(-2, 2)),
-            MovementType::CaptureAndMove(MovementType::Jump(2, 2)),
-            MovementType::CaptureWithoutMoving(MovementType::Jump(3, 3))
+            MovementType::OnlyCapture(Box::new(MovementType::Jump(-2, 2))),
+            MovementType::CaptureAndMove(Box::new(MovementType::Jump(2, 2))),
+            MovementType::CaptureWithoutMoving(Box::new(MovementType::Jump(3, 3)))
         ]);
     }
 
@@ -463,17 +464,17 @@ mod movement {
         // ConditionalMove can't be tested because closure (Fn) don't implement Eq
         assert_eq!(movement.get_all(), vec![MovementType::CaptureWithoutMoving(
             // MovementType::ConditionalMove(
-                MoveMovementType::Composition(
+                Box::new(MovementType::Composition(
                     vec![
                         MovementType::CustomRange(
-                            MovementType::Repeat(
-                                MovementType::Jump(2, 2),
+                            Box::new(MovementType::Repeat(
+                                Box::new(MovementType::Jump(2, 2)),
                                 3
-                            )
+                            ))
                         ),
                         MovementType::Jump(3, -1)
                     ]
-                )/*,*/
+                ))/*,*/
                 // Box::new(|piece, _| piece.id() == "silver_general")
             // )
         )]);
@@ -482,8 +483,8 @@ mod movement {
     #[test]
     fn movement_create_with_move_actions_enum() {
         let movement = MovementBuilder::new()
-            .add(MovementType::ActionBefore(MovementType::Jump(1, 2), Box::new(|_| {println!("foo");})))
-            .add(MovementType::ActionAfter(MovementType::Jump(-1, 2), Box::new(|_| {println!("bar");})))
+            .add(MovementType::ActionBefore(Box::new(MovementType::Jump(1, 2)), Box::new(|_| {println!("foo");})))
+            .add(MovementType::ActionAfter(Box::new(MovementType::Jump(-1, 2)), Box::new(|_| {println!("bar");})))
             .build();
     }
 
@@ -517,8 +518,8 @@ mod movement {
     #[test]
     fn movement_create_with_custom_moves_enum() {
         let movement = MovementBuilder::new()
-            .add(MovementType::CustomJump(3, 3, Box::new(|_, x, y| x % 2 == 0 && y % 2 == 0))
-            .add(MovementType::Custom(Box::new(|_, x, y| (x + 1, y + 2))))
+            .add(MovementType::CustomJump(3, 3, Box::new(|_, x, y| x % 2 == 0 && y % 2 == 0)))
+            .add(MovementType::Custom(Box::new(|_, x, y| (x as isize + 1, y as isize + 2))))
             .build();
     }
 
@@ -526,7 +527,7 @@ mod movement {
     fn movement_create_with_custom_moves_simple() {
         let movement = MovementBuilder::new()
             .custom_jump(3, 3, Box::new(|_, x, y| x % 2 == 0 && y % 2 == 0))
-            .custom(Box::new(|_, x, y| (x + 1, y + 2)))
+            .custom(Box::new(|_, x, y| (x as isize + 1, y as isize + 2)))
             .build();
     }
 
@@ -568,10 +569,10 @@ mod movement {
     #[test]
     fn movement_limited_ranges() {
         let movement = MovementBuilder::new()
-            .limited_range(DirectionAndRange::Range(Range::Orthogonal))
-            .limited_range(DirectionAndRange::Direction(Direction::UpLeft))
+            .limited_range(DirectionAndRange::Range(Range::Orthogonal), 2)
+            .limited_range(DirectionAndRange::Direction(Direction::UpLeft), 3)
             .build();
-        assert_eq!(movement.limited_ranges(), vec![DirectionAndRange::Range(Range::Orthogonal), DirectionAndRange::Direction(Direction::UpLeft)]);
+        assert_eq!(movement.limited_ranges(), vec![(DirectionAndRange::Range(Range::Orthogonal), 2), (DirectionAndRange::Direction(Direction::UpLeft), 3)]);
     }
 
     #[test]
