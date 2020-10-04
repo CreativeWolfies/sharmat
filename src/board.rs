@@ -69,7 +69,7 @@ impl<'a> Board<'a> {
     }
 
     fn check_pos(&self, x: usize, y: usize) -> BoardResult<()> {
-        if x >= self.width.get() - 1 || y >= self.height.get() - 1 {
+        if x >= self.width.get() || y >= self.height.get() {
             return Err(OutOfBounds);
         }
         Ok(())

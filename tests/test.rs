@@ -50,9 +50,13 @@ mod board {
     #[allow(unused_must_use)]
     fn board_get_piece() {
         let mut board = Board::new(NonZeroUsize::new(9).unwrap(), NonZeroUsize::new(8).unwrap());
-        let piece = PieceBuilder::new().build();
-        board.set(0, 0, &piece);
-        assert_eq!(board.get(0, 0).unwrap().map(|x| x.clone()), Some(piece));
+        for x in 0..9 {
+            for y in 0..9 {
+                let piece = PieceBuilder::new().build();
+                board.set(x, y, &piece);
+                assert_eq!(board.get(x, y).unwrap().map(|z| z.clone()), Some(piece));
+            }
+        }
     }
 
     #[test]
