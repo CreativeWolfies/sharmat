@@ -3,10 +3,10 @@ use crate::piece::Piece;
 use self::BoardError::*;
 
 #[derive(Debug, PartialEq, Eq, Hash)]
-pub struct Board<'a> {
+pub struct Board {
     pub width: NonZeroUsize,
     pub height: NonZeroUsize,
-    board: Vec<Vec<Option<&'a Piece>>>,
+    board: Vec<Vec<Option<usize>>>,
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -16,7 +16,7 @@ pub enum BoardError {
 
 pub type BoardResult<T> = Result<T, BoardError>;
 
-impl<'a> Board<'a> {
+impl Board {
     pub fn new(width: NonZeroUsize, height: NonZeroUsize) -> Self {
         let mut board = Vec::with_capacity(width.get());
         for x in 0..width.get() {
@@ -32,16 +32,13 @@ impl<'a> Board<'a> {
         }
     }
 
-    pub fn set(&mut self, x: usize, y: usize, piece: &'a Piece) -> BoardResult<()> {
-        let res_check_pos = self.check_pos(x, y);
-        if res_check_pos.is_err() {
-            return res_check_pos;
-        }
-        self.board[x][y] = Some(piece);
+    pub fn set(&mut self, x: usize, y: usize, piece: Option<usize>) -> BoardResult<()> {
+        let res_check_pos = self.check_pos(x, y)?;
+        self.board[x][y] = piece;
         Ok(())
     }
 
-    pub fn get(&self, x: usize, y: usize) -> BoardResult<Option<&Piece>> {
+    pub fn get(&self, x: usize, y: usize) -> BoardResult<Option<usize>> {
         self.check_pos(x, y)?;
         Ok(self.board[x][y])
     }
@@ -76,11 +73,11 @@ impl<'a> Board<'a> {
         Ok(())
     }
 
-    pub fn set_name(&mut self, name: &'a str) {
+    pub fn set_name<'a>(&'a mut self, name: &'a str) {
         unimplemented!();
     }
 
-    pub fn name(&self) -> &'a str {
+    pub fn name<'a>(&'a self) -> &'a str {
         unimplemented!();
     }
 }

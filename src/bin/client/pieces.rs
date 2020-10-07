@@ -1,4 +1,4 @@
-use iced::{Container, Element, Length, svg::Handle};
+use iced::svg::Handle;
 use std::collections::HashMap;
 use std::fs;
 
