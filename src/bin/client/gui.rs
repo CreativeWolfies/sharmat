@@ -1,18 +1,17 @@
 use std::num::NonZeroUsize;
 use iced::{
-    canvas::layer::Cache,
-    canvas::{Canvas, Drawable, Fill, Frame, Path},
     executor,
     Application, Container, Element, Length, Point, Size, Color, Row, Command, Background,
 };
 use iced_native::{
-    widget::{Widget, svg::Svg},
+    widget::{Widget, svg::Handle},
     layout,
     MouseCursor, Rectangle,
 };
 use iced_wgpu::{Renderer, Primitive, Defaults};
 use sharmat::{
     board::*,
+    piece::Piece,
 };
 use super::style::SharmatStyleSheet;
 use std::collections::HashMap;
@@ -23,9 +22,10 @@ use std::hash::Hash;
 /// Main window model
 #[derive(Debug)]
 pub struct Sharmat<'a> {
-    board: Rc<RefCell<Board<'a>>>,
-    stylesheet: SharmatStyleSheet,
-    pieces: Rc<HashMap<String, Svg>>,
+    pub board: Rc<RefCell<Board<'a>>>,
+    pub stylesheet: SharmatStyleSheet,
+    pub piece_assets: Rc<HashMap<String, Handle>>,
+    pub pieces: Rc<Vec<Piece>>,
 }
 
 /// Message enum for user interaction
@@ -40,19 +40,21 @@ pub struct GBoard<'a> {
     // pub cache: Cache<Self>,
     pub fill_dark: Color,
     pub fill_light: Color,
-    pieces: Rc<HashMap<String, Svg>>,
+    pub piece_assets: Rc<HashMap<String, Handle>>,
+    pub pieces: Rc<Vec<Piece>>,
 }
 
 impl<'a> Application for Sharmat<'a> {
     type Executor = executor::Null;
     type Message = Message;
-    type Flags = (HashMap<String, Svg>);
+    type Flags = (HashMap<String, Handle>, Board<'a>, Vec<Piece>);
 
     fn new(flags: Self::Flags) -> (Self, Command<Self::Message>) {
         (Self {
-            board: Rc::new(RefCell::new(Board::new(NonZeroUsize::new(8).unwrap(), NonZeroUsize::new(8).unwrap()))),
+            board: Rc::new(RefCell::new(flags.1)),
             stylesheet: SharmatStyleSheet::default(),
-            pieces: Rc::new(flags),
+            piece_assets: Rc::new(flags.0),
+            pieces: Rc::new(flags.2),
         }, Command::none())
     }
 
@@ -64,7 +66,7 @@ impl<'a> Application for Sharmat<'a> {
         Container::new(
             Row::new()
                 .push(
-                    Container::new::<iced_native::Element<_, _>>(GBoard::new(self.board.clone(), self.pieces.clone()).into())
+                    Container::new::<iced_native::Element<_, _>>(GBoard::new(self.board.clone(), self.piece_assets.clone(), self.pieces.clone()).into())
                     .width(Length::Units(600))
                     .height(Length::Units(600))
                     .padding(10)
@@ -85,11 +87,12 @@ impl<'a> Application for Sharmat<'a> {
 }
 
 impl<'a> GBoard<'a> {
-    pub fn new(board: Rc<RefCell<Board<'a>>>, pieces: Rc<HashMap<String, Svg>>) -> GBoard<'a> {
+    pub fn new(board: Rc<RefCell<Board<'a>>>, piece_assets: Rc<HashMap<String, Handle>>, pieces: Rc<Vec<Piece>>) -> GBoard<'a> {
         GBoard {
             board,
             fill_dark: Color::from_rgb8(226, 149, 120),
             fill_light: Color::from_rgb8(255, 221, 210),
+            piece_assets,
             pieces,
         }
     }
@@ -145,11 +148,15 @@ impl<'a, Message> Widget<Message, Renderer> for GBoard<'a> {
                 //     hovers_piece = true;
                 // }
                 res.push(Primitive::Quad {
-                    bounds,
+                    bounds: bounds.clone(),
                     background: if (x + y) % 2 == 0 {Background::Color(self.fill_light)} else {Background::Color(self.fill_dark)},
                     border_radius: 0,
                     border_width: 0,
                     border_color: Color::TRANSPARENT,
+                });
+                res.push(Primitive::Svg {
+                    handle: self.piece_assets.get("standard.w_pawn").unwrap().clone(),
+                    bounds,
                 });
             }
         }
