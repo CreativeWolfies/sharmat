@@ -1,6 +1,5 @@
 use super::board::Board;
 use super::game::Game;
-use super::piece::Piece;
 use super::player::Player;
 use std::fmt;
 
@@ -143,7 +142,7 @@ impl MovementType {
                 }
                 Some(res)
             }
-            MovementType::Composition(moves) => {
+            MovementType::Composition(_moves) => {
                 // idk how to do this, it'll have to be recursive so might as well remove the Vec from the type
                 unimplemented!();
             }

@@ -1,8 +1,7 @@
 use std::num::NonZeroUsize;
-use crate::piece::Piece;
 use self::BoardError::*;
 
-#[derive(Debug, PartialEq, Eq, Hash)]
+#[derive(Debug, PartialEq, Eq, Hash, Clone)]
 pub struct Board {
     pub width: NonZeroUsize,
     pub height: NonZeroUsize,
@@ -33,7 +32,7 @@ impl Board {
     }
 
     pub fn set(&mut self, x: usize, y: usize, piece: Option<usize>) -> BoardResult<()> {
-        let res_check_pos = self.check_pos(x, y)?;
+        self.check_pos(x, y)?;
         self.board[x][y] = piece;
         Ok(())
     }
@@ -73,7 +72,7 @@ impl Board {
         Ok(())
     }
 
-    pub fn set_name<'a>(&'a mut self, name: &'a str) {
+    pub fn set_name<'a>(&'a mut self, _name: &'a str) {
         unimplemented!();
     }
 
