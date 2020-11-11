@@ -6,6 +6,9 @@ use sharmat::player::*;
 #[cfg(test)]
 mod board;
 
+#[cfg(test)]
+mod movement;
+
 // Engine basic tests
 
 #[cfg(test)]
@@ -14,7 +17,7 @@ mod player {
 
     #[test]
     fn player_create() {
-        let _player = Player::new(/* UNKNOWN */);
+        let _player = Player::new(true, /* UNKNOWN */);
     }
 }
 

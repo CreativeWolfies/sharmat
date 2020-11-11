@@ -6,6 +6,7 @@ pub struct Board {
     pub width: NonZeroUsize,
     pub height: NonZeroUsize,
     board: Vec<Vec<Option<usize>>>,
+    name: String,
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -28,6 +29,7 @@ impl Board {
             width,
             height,
             board,
+            name: String::from("Board")
         }
     }
 
@@ -72,11 +74,11 @@ impl Board {
         Ok(())
     }
 
-    pub fn set_name<'a>(&'a mut self, _name: &'a str) {
-        unimplemented!();
+    pub fn set_name<'a>(&'a mut self, name: &'a str) {
+        self.name = name.to_string();
     }
 
-    pub fn name<'a>(&'a self) -> &'a str {
-        unimplemented!();
+    pub fn name<'a>(&'a self) -> String {
+        self.name.clone()
     }
 }

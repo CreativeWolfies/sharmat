@@ -4,7 +4,9 @@ pub struct Player {
 }
 
 impl Player {
-    pub fn new() -> Self {
-        unimplemented!();
+    pub fn new(white: bool) -> Self {
+        Self {
+            white
+        }
     }
 }
