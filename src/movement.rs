@@ -6,30 +6,86 @@ use std::fmt;
 pub enum MovementType {
     /// The null movement, yields by itself ∅
     Stay,
-    /// Describe a piece's movements based on any orthogonal basis.
+    /// Describes a piece's movements based on any orthogonal basis.
     /// `Undirected(a, b)` is equivalent to moving `a` squares in any direction and `b` in the other direction.
     ///
     /// ## Example:
     ///
     /// ```rust,ignore
-    /// let knight_movement = Undirected(2, 1);
-    /// let elephant_movement = Undirected(2, 2);
-    /// let wazir_movement = Undirected(1, 0); // could also be Undirected(0, 1)
+    /// let knight_movement = MovementType::Undirected(2, 1);
+    /// let elephant_movement = MovementType::Undirected(2, 2);
+    /// let wazir_movement = MovementType::Undirected(1, 0); // could also be MovementType::Undirected(0, 1)
     /// ```
     Undirected(usize, usize),
-    Directed(isize, isize), // <a, b> -mover
-    RangeAny(Box<MovementType>), // x-∞-rider; may not contain any Composition: make it not recursive?
-    Range(Box<MovementType>, usize), // x-n-rider; may not contain any Composition: make it not recursive?
-    Union(Vec<MovementType>), // a OR b OR c ... OR ω
-    Condition(Box<MovementType>, Vec<MovementCondition>)
+
+    /// Describes a piece's unique movement on the (x, y) basis.
+    /// `Directed(dx, dy)` is equivalent to moving a piece that is on `(x, y)` to `(x + dx, y + dy)`.
+    ///
+    /// ## Example:
+    ///
+    /// ```rust,ignore
+    /// let white_pawn_movement = MovementType::Directed(0, 1);
+    /// ```
+    Directed(isize, isize),
+
+    /// Turns regular movement types (Undirected, Directed) into a ranging movement type
+    /// `RangeAny(Directed(dx, dy))` is equivalent to moving a piece that is on `(x, y)` to `(x + n*dx, y + n*dy)`, with any `n > 1`.
+    /// No other piece must stand in that piece's path; any opponent's piece will be taken and the piece will stop.
+    ///
+    /// ## Example:
+    ///
+    /// ```rust,ignore
+    /// let lance_movement = MovementType::RangeAny(Box::new(MovementType::Directed(0, 1)));
+    /// ```
+    RangeAny(Box<MovementType>),
+
+    /// Turns regular movement types (Undirected, Directed) into a limited, ranging movement type
+    /// `Range(Directed(dx, dy), max)` is equivalent to moving a piece that is on `(x, y)` to `(x + n*dx, y + n*dy)`, with any `1 < n ≤ max`.
+    /// No other piece must stand in that piece's path; any opponent's piece will be taken and the piece will stop.
+    ///
+    /// ## Example:
+    ///
+    /// ```rust,ignore
+    /// let double_pawn_movement = MovementType::Range(Box::new(MovementType::Directed(0, 1)), 2);
+    /// ```
+    Range(Box<MovementType>, usize),
+
+    /// Assembles two movement types into a union of both of them
+    /// `Union(a, b, c, ..., ω)` is equivalent to being able to do `a` OR `b` OR `c` OR ... OR `ω`.
+    ///
+    /// ## Example:
+    ///
+    /// ```rust,ignore
+    /// let king_movement = MovementType::Union(vec![MovementType::Undirected(0, 1), MovementType::Undirected(1, 1)]);
+    /// ```
+    Union(Vec<MovementType>),
+
+    /// Adds one or more conditions to a movement type.
+    /// See `MovementCondition` for more information on the different, possible conditions.
+    ///
+    /// ## Example:
+    ///
+    /// ```rust,ignore
+    /// let pawn_movement = MovementType::Union(vec![
+    ///     MovementType::Condition(Box::new(MovementType::Directed(0, 1)), MovementCondition::AsWhite),
+    ///     MovementType::Condition(Box::new(MovementType::Directed(0, -1)), MovementCondition::AsBlack),
+    /// ]);
+    /// ```
+    Condition(Box<MovementType>, Vec<MovementCondition>),
+
     // Custom?
 }
 
 pub enum MovementCondition {
+    /// If the target square must be occupied by an opponent's piece
     Capture,
+    /// If the target square is not occupied by any piece
     NoCapture,
+    /// If the current player is white
     AsWhite,
+    /// If the current player is black
     AsBlack,
+    /// A custom condition
     Condition(&'static (dyn Fn(&Board, &Player, usize, usize, isize, isize) -> bool + 'static))
 }
 
@@ -74,6 +130,9 @@ impl MovementCondition {
 }
 
 impl MovementType {
+    /**
+    Evaluates a MovementType's branches down into a set of possible, raw movements (dx, dy).
+    **/
     pub fn flatten(&self, board: &Board, player: &Player, x: usize, y: usize) -> Option<Vec<RawMovement>> {
         match self {
             MovementType::Stay => Some(vec![]),
