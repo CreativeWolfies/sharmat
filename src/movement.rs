@@ -84,21 +84,23 @@ impl MovementType {
                         res.push((dx, dy));
                     }
                 };
-                if *dx == *dy {
-                    try_append(*dx as isize, *dy as isize);
-                    try_append(-(*dx as isize), *dy as isize);
-                    try_append(*dx as isize, -(*dy as isize));
-                    try_append(-(*dx as isize), -(*dy as isize));
+                let dx = *dx as isize;
+                let dy = *dy as isize;
+                if dx == dy {
+                    try_append(dx, dy);
+                    try_append(-dx, dy);
+                    try_append(dx, -dy);
+                    try_append(-dx, -dy);
                 } else {
                     // hard-coded permutations; idc we're in 2d
-                    try_append(*dx as isize, *dy as isize);
-                    try_append(-(*dx as isize), *dy as isize);
-                    try_append(*dx as isize, -(*dy as isize));
-                    try_append(-(*dx as isize), -(*dy as isize));
-                    try_append(*dy as isize, *dx as isize);
-                    try_append(-(*dy as isize), *dx as isize);
-                    try_append(*dy as isize, -(*dx as isize));
-                    try_append(-(*dy as isize), -(*dx as isize));
+                    try_append(dx, dy);
+                    try_append(-dx, dy);
+                    try_append(dx, -dy);
+                    try_append(-dx, -dy);
+                    try_append(dy, dx);
+                    try_append(-dy, dx);
+                    try_append(dy, -dx);
+                    try_append(-dy, -dx);
                 }
                 Some(res)
             }
