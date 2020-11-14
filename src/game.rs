@@ -1,41 +1,42 @@
+use std::num::NonZeroUsize;
 use std::default::Default;
 use crate::board::Board;
 use crate::piece::Piece;
 
 #[derive(Debug)]
 pub struct Game {
-    game_pieces: Vec<Piece>,
-    game_boards: Vec<Board>,
+    pieces: Vec<Piece>,
+    board: Board,
 }
 
 impl Game {
     pub fn pieces(&self) -> &Vec<Piece> {
-        &self.game_pieces
+        &self.pieces
     }
 
-    pub fn boards(&self) -> &Vec<Board> {
-        &self.game_boards
+    pub fn board(&self) -> &Board {
+        &self.board
     }
 
     pub fn search_piece<'a>(&'a self, id: &str) -> Option<&'a Piece> {
-        self.game_pieces.iter().find(|x| x.id() == id)
+        self.pieces.iter().find(|x| x.id() == id)
     }
 
     pub fn search_piece_alias<'a>(&'a self, alias: &str) -> Vec<&'a Piece> {
-        self.game_pieces.iter().filter(|x| x.alias_list().contains(&alias.to_string())).collect()
+        self.pieces.iter().filter(|x| x.alias_list().contains(&alias.to_string())).collect()
     }
 }
 
 pub struct GameBuilder {
     game_pieces: Vec<Piece>,
-    game_boards: Vec<Board>,
+    game_board: Board,
 }
 
 impl Default for GameBuilder {
     fn default() -> Self {
         GameBuilder {
             game_pieces: vec![],
-            game_boards: vec![],
+            game_board: Board::new(NonZeroUsize::new(1).unwrap(), NonZeroUsize::new(1).unwrap()),
         }
     }
 }
@@ -46,12 +47,7 @@ impl GameBuilder {
     }
 
     pub fn board(mut self, board: Board) -> Self {
-        self.game_boards.push(board);
-        self
-    }
-
-    pub fn boards(mut self, mut boards: Vec<Board>) -> Self {
-        self.game_boards.append(&mut boards);
+        self.game_board = board;
         self
     }
 
@@ -67,8 +63,8 @@ impl GameBuilder {
 
     pub fn build(self) -> Game {
         Game {
-            game_boards: self.game_boards,
-            game_pieces: self.game_pieces,
+            board: self.game_board,
+            pieces: self.game_pieces,
         }
     }
 }

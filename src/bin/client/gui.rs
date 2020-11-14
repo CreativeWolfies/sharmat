@@ -36,7 +36,6 @@ type Message = SharmatMessage;
 /// Graphical board (visible representation of the board)
 #[derive(Debug)]
 pub struct GBoard {
-    pub board: usize,
     pub game: Rc<RefCell<Game>>,
     // pub cache: Cache<Self>,
     pub fill_dark: Color,
@@ -65,7 +64,7 @@ impl Application for Sharmat {
         Container::new(
             Row::new()
                 .push(
-                    Container::new::<iced_native::Element<_, _>>(GBoard::new(self.game.clone(), 0, self.piece_assets.clone()).into())
+                    Container::new::<iced_native::Element<_, _>>(GBoard::new(self.game.clone(), self.piece_assets.clone()).into())
                     .width(Length::Units(600))
                     .height(Length::Units(600))
                     .padding(10)
@@ -86,10 +85,9 @@ impl Application for Sharmat {
 }
 
 impl GBoard {
-    pub fn new(game: Rc<RefCell<Game>>, board: usize, piece_assets: Rc<HashMap<String, Handle>>) -> GBoard {
+    pub fn new(game: Rc<RefCell<Game>>, piece_assets: Rc<HashMap<String, Handle>>) -> GBoard {
         GBoard {
             game,
-            board,
             fill_dark: Color::from_rgb8(226, 149, 120),
             fill_light: Color::from_rgb8(255, 221, 210),
             piece_assets,
@@ -98,12 +96,12 @@ impl GBoard {
 
     #[inline]
     pub fn get_board_width(&self) -> usize {
-        self.game.borrow().boards()[self.board].width.get()
+        self.game.borrow().board().width.get()
     }
 
     #[inline]
     pub fn get_board_height(&self) -> usize {
-        self.game.borrow().boards()[self.board].height.get()
+        self.game.borrow().board().height.get()
     }
 
     #[inline]
@@ -113,7 +111,7 @@ impl GBoard {
 
     #[inline]
     pub fn get(&self, x: usize, y: usize) -> Option<(usize, PlayerColor)> {
-        self.game.borrow().boards()[self.board].get(x, y).ok().flatten()
+        self.game.borrow().board().get(x, y).ok().flatten()
     }
 }
 
@@ -134,7 +132,7 @@ impl<'a, Message> Widget<Message, Renderer> for GBoard {
     }
 
     fn hash_layout(&self, hasher: &mut iced_native::Hasher) {
-        self.game.borrow().boards()[self.board].hash(hasher);
+        self.game.borrow().board().hash(hasher);
     }
 
     fn draw(&self, _renderer: &mut Renderer, _defaults: &Defaults, layout: layout::Layout<'_>, mouse: Point) -> (Primitive, MouseCursor) {
