@@ -9,8 +9,6 @@ use iced_native::{
 };
 use iced_wgpu::{Renderer, Primitive, Defaults};
 use sharmat::{
-    // board::*,
-    // piece::Piece,
     player::PlayerColor,
     game::*,
 };
@@ -25,6 +23,7 @@ use std::hash::Hash;
 pub struct Sharmat {
     pub game: Rc<RefCell<Game>>,
     pub stylesheet: SharmatStyleSheet,
+    pub render_hints: bool,
     pub piece_assets: Rc<HashMap<String, Handle>>,
 }
 
@@ -40,19 +39,24 @@ pub struct GBoard {
     // pub cache: Cache<Self>,
     pub fill_dark: Color,
     pub fill_light: Color,
+    pub fill_dark_hl: Color,
+    pub fill_light_hl: Color,
+    pub render_hints: bool,
     pub piece_assets: Rc<HashMap<String, Handle>>,
 }
 
 impl Application for Sharmat {
     type Executor = executor::Null;
     type Message = Message;
-    type Flags = (HashMap<String, Handle>, Game);
+    /// SVG handles, Game structure, whether or not to show hints
+    type Flags = (HashMap<String, Handle>, Game, bool);
 
     fn new(flags: Self::Flags) -> (Self, Command<Self::Message>) {
         (Self {
             game: Rc::new(RefCell::new(flags.1)),
             stylesheet: SharmatStyleSheet::default(),
             piece_assets: Rc::new(flags.0),
+            render_hints: flags.2,
         }, Command::none())
     }
 
@@ -64,7 +68,7 @@ impl Application for Sharmat {
         Container::new(
             Row::new()
                 .push(
-                    Container::new::<iced_native::Element<_, _>>(GBoard::new(self.game.clone(), self.piece_assets.clone()).into())
+                    Container::new::<iced_native::Element<_, _>>(GBoard::new(self.game.clone(), self.piece_assets.clone(), self.render_hints).into())
                     .width(Length::Units(600))
                     .height(Length::Units(600))
                     .padding(10)
@@ -85,12 +89,15 @@ impl Application for Sharmat {
 }
 
 impl GBoard {
-    pub fn new(game: Rc<RefCell<Game>>, piece_assets: Rc<HashMap<String, Handle>>) -> GBoard {
+    pub fn new(game: Rc<RefCell<Game>>, piece_assets: Rc<HashMap<String, Handle>>, render_hints: bool) -> GBoard {
         GBoard {
             game,
             fill_dark: Color::from_rgb8(226, 149, 120),
             fill_light: Color::from_rgb8(255, 221, 210),
+            fill_dark_hl: Color::from_rgb8(113, 129, 120),
+            fill_light_hl: Color::from_rgb8(170, 184, 180),
             piece_assets,
+            render_hints,
         }
     }
 
@@ -107,6 +114,11 @@ impl GBoard {
     #[inline]
     pub fn tile_size(&self, width: f32, height: f32) -> f32 {
         (width / self.get_board_width() as f32).min(height / self.get_board_height() as f32)
+    }
+
+    #[inline]
+    pub fn get_raw(&self, x: usize, y: usize) -> Option<(usize, PlayerColor)> {
+        self.game.borrow().board().get(x, y).ok().flatten()
     }
 
     #[inline]
@@ -138,7 +150,23 @@ impl<'a, Message> Widget<Message, Renderer> for GBoard {
     fn draw(&self, _renderer: &mut Renderer, _defaults: &Defaults, layout: layout::Layout<'_>, mouse: Point) -> (Primitive, MouseCursor) {
         let mut res: Vec<Primitive> = Vec::new();
         let tile_size = self.tile_size(layout.bounds().width, layout.bounds().height);
-        let mut hovers_piece: bool = false;
+
+        let (m_x, m_y) = if layout.bounds().contains(mouse) {(
+                ((mouse.x - layout.bounds().x) / tile_size).floor() as usize,
+                ((mouse.y - layout.bounds().y) / tile_size).floor() as usize,
+        )} else {(std::usize::MAX, std::usize::MAX)};
+
+        let hovered_piece_raw = if m_x == std::usize::MAX {None} else {self.get(m_x, m_y)};
+        let hints: Vec<(usize, usize)> = if hovered_piece_raw.is_some() && self.render_hints {
+            let raw = &hovered_piece_raw.unwrap();
+            let game = self.game.borrow();
+            let hovered_piece = game.pieces().get(raw.0).expect(&format!("Couldn't find piece {}", raw.0));
+            let hovered_player = game.player(raw.1).expect(&format!("Couldn't find player {:?}", raw.1));
+            hovered_piece.movement_type()[0].flatten(self.game.borrow().board(), hovered_player, m_x, m_y).unwrap().into_iter().map(|(dx, dy)| ((m_x as isize + dx) as usize, (m_y as isize + dy) as usize)).collect()
+        } else {
+            vec![]
+        };
+
         for y in 0..self.get_board_height() {
             for x in 0..self.get_board_width() {
                 let v_x = layout.bounds().x + tile_size * x as f32;
@@ -147,23 +175,23 @@ impl<'a, Message> Widget<Message, Renderer> for GBoard {
 
                 // Display piece at x, y
                 if let Some((piece_index, piece_color)) = self.get(x, y) {
-                    if bounds.contains(mouse) {
-                        hovers_piece = true;
-                    }
-
                     if let Some(piece) = self.game.borrow().pieces().get(piece_index) {
                         res.push(Primitive::Svg {
                             handle: self.piece_assets.get(if piece_color.white() {piece.display_white()} else {piece.display_black()}).unwrap().clone(),
                             bounds,
                         });
                     } else {
-                        panic!("Piece index {} does not exist!");
+                        panic!("Piece index {} out of bound!", piece_index);
                     }
                 }
 
                 res.push(Primitive::Quad {
                     bounds: bounds.clone(),
-                    background: if (x + y) % 2 == 0 {Background::Color(self.fill_light)} else {Background::Color(self.fill_dark)},
+                    background: if hints.iter().find(|(x2, y2)| x == *x2 && y == *y2).is_some() {
+                        if (x + y) % 2 == 0 {Background::Color(self.fill_light_hl)} else {Background::Color(self.fill_dark_hl)}
+                    } else {
+                        if (x + y) % 2 == 0 {Background::Color(self.fill_light)} else {Background::Color(self.fill_dark)}
+                    },
                     border_radius: 0,
                     border_width: 0,
                     border_color: Color::TRANSPARENT,
@@ -173,7 +201,7 @@ impl<'a, Message> Widget<Message, Renderer> for GBoard {
 
         (
             Primitive::Group {primitives: res},
-            if hovers_piece {MouseCursor::Pointer} else {MouseCursor::Idle}
+            if hovered_piece_raw.is_some() {MouseCursor::Pointer} else {MouseCursor::Idle}
         )
     }
 }

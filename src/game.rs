@@ -2,12 +2,13 @@ use std::num::NonZeroUsize;
 use std::default::Default;
 use crate::board::Board;
 use crate::piece::Piece;
-use crate::player::PlayerColor;
+use crate::player::{Player, PlayerColor};
 
 #[derive(Debug)]
 pub struct Game {
     pieces: Vec<Piece>,
     board: Board,
+    pub players: Vec<Player>,
 }
 
 impl Game {
@@ -31,11 +32,16 @@ impl Game {
         let piece_index = self.pieces.iter().enumerate().find(|(_k, x)| x.id() == piece || x.alias_list().contains(&piece.to_string()))?.0;
         self.board.set(x, y, Some((piece_index, color))).ok()
     }
+
+    pub fn player(&self, color: PlayerColor) -> Option<&Player> {
+        self.players.iter().find(|p| p.color == color)
+    }
 }
 
 pub struct GameBuilder {
     game_pieces: Vec<Piece>,
     game_board: Board,
+    game_players: Vec<Player>,
 }
 
 impl Default for GameBuilder {
@@ -43,6 +49,7 @@ impl Default for GameBuilder {
         GameBuilder {
             game_pieces: vec![],
             game_board: Board::new(NonZeroUsize::new(1).unwrap(), NonZeroUsize::new(1).unwrap()),
+            game_players: vec![],
         }
     }
 }
@@ -67,10 +74,16 @@ impl GameBuilder {
         self
     }
 
+    pub fn player(mut self, player: Player) -> Self {
+        self.game_players.push(player);
+        self
+    }
+
     pub fn build(self) -> Game {
         Game {
             board: self.game_board,
             pieces: self.game_pieces,
+            players: self.game_players,
         }
     }
 }

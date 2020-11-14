@@ -89,7 +89,7 @@ pub enum MovementCondition {
     Custom(&'static (dyn Fn(&Board, &Player, usize, usize, isize, isize) -> bool + 'static))
 }
 
-type RawMovement = (isize, isize);
+pub type RawMovement = (isize, isize);
 
 impl Copy for MovementCondition {}
 
@@ -118,7 +118,7 @@ impl fmt::Debug for MovementCondition {
 }
 
 impl MovementCondition {
-    fn validate(&self, board: &Board, player: &Player, x: usize, y: usize, dx: isize, dy: isize) -> bool {
+    pub fn validate(&self, board: &Board, player: &Player, x: usize, y: usize, dx: isize, dy: isize) -> bool {
         match self {
             MovementCondition::Capture => board.get((x as isize + dx) as usize, (y as isize + dy) as usize).ok().flatten().is_some(),
             MovementCondition::NoCapture => board.get((x as isize + dx) as usize, (y as isize + dy) as usize).ok().flatten().is_none(),
