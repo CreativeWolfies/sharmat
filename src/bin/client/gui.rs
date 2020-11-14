@@ -11,6 +11,7 @@ use iced_wgpu::{Renderer, Primitive, Defaults};
 use sharmat::{
     // board::*,
     // piece::Piece,
+    player::PlayerColor,
     game::*,
 };
 use super::style::SharmatStyleSheet;
@@ -111,7 +112,7 @@ impl GBoard {
     }
 
     #[inline]
-    pub fn get(&self, x: usize, y: usize) -> Option<usize> {
+    pub fn get(&self, x: usize, y: usize) -> Option<(usize, PlayerColor)> {
         self.game.borrow().boards()[self.board].get(x, y).ok().flatten()
     }
 }
@@ -147,14 +148,14 @@ impl<'a, Message> Widget<Message, Renderer> for GBoard {
                 let bounds = Rectangle {x: v_x, y: v_y, width: tile_size, height: tile_size};
 
                 // Display piece at x, y
-                if let Some(piece_index) = self.get(x, y) {
+                if let Some((piece_index, piece_color)) = self.get(x, y) {
                     if bounds.contains(mouse) {
                         hovers_piece = true;
                     }
 
                     if let Some(piece) = self.game.borrow().pieces().get(piece_index) {
                         res.push(Primitive::Svg {
-                            handle: self.piece_assets.get(piece.id()).unwrap().clone(),
+                            handle: self.piece_assets.get(if piece_color.white() {piece.display_white()} else {piece.display_black()}).unwrap().clone(),
                             bounds,
                         });
                     } else {

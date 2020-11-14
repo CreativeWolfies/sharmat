@@ -1,11 +1,14 @@
 use std::num::NonZeroUsize;
 use self::BoardError::*;
+use super::player::PlayerColor;
+
+type RawPiece = Option<(usize, PlayerColor)>;
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone)]
 pub struct Board {
     pub width: NonZeroUsize,
     pub height: NonZeroUsize,
-    board: Vec<Vec<Option<usize>>>,
+    board: Vec<Vec<RawPiece>>,
     name: String,
 }
 
@@ -33,13 +36,13 @@ impl Board {
         }
     }
 
-    pub fn set(&mut self, x: usize, y: usize, piece: Option<usize>) -> BoardResult<()> {
+    pub fn set(&mut self, x: usize, y: usize, piece: RawPiece) -> BoardResult<()> {
         self.check_pos(x, y)?;
         self.board[x][y] = piece;
         Ok(())
     }
 
-    pub fn get(&self, x: usize, y: usize) -> BoardResult<Option<usize>> {
+    pub fn get(&self, x: usize, y: usize) -> BoardResult<RawPiece> {
         self.check_pos(x, y)?;
         Ok(self.board[x][y])
     }
