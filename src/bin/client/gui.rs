@@ -1,4 +1,3 @@
-use std::num::NonZeroUsize;
 use iced::{
     executor,
     Application, Container, Element, Length, Point, Size, Color, Row, Command, Background,
@@ -10,8 +9,8 @@ use iced_native::{
 };
 use iced_wgpu::{Renderer, Primitive, Defaults};
 use sharmat::{
-    board::*,
-    piece::Piece,
+    // board::*,
+    // piece::Piece,
     game::*,
 };
 use super::style::SharmatStyleSheet;

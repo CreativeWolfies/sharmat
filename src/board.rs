@@ -1,12 +1,12 @@
 use std::num::NonZeroUsize;
-use crate::piece::Piece;
 use self::BoardError::*;
 
-#[derive(Debug, PartialEq, Eq, Hash)]
+#[derive(Debug, PartialEq, Eq, Hash, Clone)]
 pub struct Board {
     pub width: NonZeroUsize,
     pub height: NonZeroUsize,
     board: Vec<Vec<Option<usize>>>,
+    name: String,
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -29,11 +29,12 @@ impl Board {
             width,
             height,
             board,
+            name: String::from("Board")
         }
     }
 
     pub fn set(&mut self, x: usize, y: usize, piece: Option<usize>) -> BoardResult<()> {
-        let res_check_pos = self.check_pos(x, y)?;
+        self.check_pos(x, y)?;
         self.board[x][y] = piece;
         Ok(())
     }
@@ -74,10 +75,10 @@ impl Board {
     }
 
     pub fn set_name<'a>(&'a mut self, name: &'a str) {
-        unimplemented!();
+        self.name = name.to_string();
     }
 
-    pub fn name<'a>(&'a self) -> &'a str {
-        unimplemented!();
+    pub fn name<'a>(&'a self) -> String {
+        self.name.clone()
     }
 }

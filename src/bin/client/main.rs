@@ -17,7 +17,6 @@ pub mod pieces;
 fn main() {
     // TODO: do this in another thread or idk
     let mut board = Board::new(NonZeroUsize::new(8).unwrap(), NonZeroUsize::new(8).unwrap());
-    let pawn = PieceBuilder::new().id("standard.w_pawn").build();
     board.set(0, 7, Some(5)).unwrap();
     board.set(1, 7, Some(2)).unwrap();
     board.set(2, 7, Some(0)).unwrap();
