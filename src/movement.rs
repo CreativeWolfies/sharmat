@@ -86,7 +86,7 @@ pub enum MovementCondition {
     /// If the current player is black
     AsBlack,
     /// A custom condition
-    Condition(&'static (dyn Fn(&Board, &Player, usize, usize, isize, isize) -> bool + 'static))
+    Custom(&'static (dyn Fn(&Board, &Player, usize, usize, isize, isize) -> bool + 'static))
 }
 
 type RawMovement = (isize, isize);
@@ -100,7 +100,7 @@ impl Clone for MovementCondition {
             MovementCondition::NoCapture => MovementCondition::NoCapture,
             MovementCondition::AsWhite => MovementCondition::AsWhite,
             MovementCondition::AsBlack => MovementCondition::AsBlack,
-            MovementCondition::Condition(f) => MovementCondition::Condition(*f),
+            MovementCondition::Custom(f) => MovementCondition::Custom(*f),
         }
     }
 }
@@ -112,7 +112,7 @@ impl fmt::Debug for MovementCondition {
             MovementCondition::NoCapture => write!(f, "NoCapture"),
             MovementCondition::AsWhite => write!(f, "AsWhite"),
             MovementCondition::AsBlack => write!(f, "AsBlack"),
-            MovementCondition::Condition(_) => write!(f, "Condition(<fn>)"),
+            MovementCondition::Custom(_) => write!(f, "Custom(<fn>)"),
         }
     }
 }
@@ -122,9 +122,9 @@ impl MovementCondition {
         match self {
             MovementCondition::Capture => board.get((x as isize + dx) as usize, (y as isize + dy) as usize).ok().flatten().is_some(),
             MovementCondition::NoCapture => board.get((x as isize + dx) as usize, (y as isize + dy) as usize).ok().flatten().is_none(),
-            MovementCondition::AsWhite => player.white,
-            MovementCondition::AsBlack => !player.white,
-            MovementCondition::Condition(f) => f(board, player, x, y, dx, dy),
+            MovementCondition::AsWhite => player.color.white(),
+            MovementCondition::AsBlack => player.color.black(),
+            MovementCondition::Custom(f) => f(board, player, x, y, dx, dy),
         }
     }
 }
