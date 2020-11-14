@@ -18,34 +18,13 @@ pub mod pieces;
 
 fn main() {
     // TODO: do this in another thread or idk
-    let mut board = Board::new(NonZeroUsize::new(8).unwrap(), NonZeroUsize::new(8).unwrap());
-    board.set(0, 0, Some((1, PlayerColor::White))).unwrap();
-    board.set(1, 0, Some((4, PlayerColor::White))).unwrap();
-    board.set(2, 0, Some((0, PlayerColor::White))).unwrap();
-    board.set(3, 0, Some((2, PlayerColor::White))).unwrap();
-    board.set(4, 0, Some((3, PlayerColor::White))).unwrap();
-    board.set(5, 0, Some((0, PlayerColor::White))).unwrap();
-    board.set(6, 0, Some((4, PlayerColor::White))).unwrap();
-    board.set(7, 0, Some((1, PlayerColor::White))).unwrap();
-
-    for x in 0..8 {
-        board.set(x, 6, Some((5, PlayerColor::Black))).unwrap();
-        board.set(x, 1, Some((5, PlayerColor::White))).unwrap();
-    }
-
-    board.set(0, 7, Some((1, PlayerColor::Black))).unwrap();
-    board.set(1, 7, Some((4, PlayerColor::Black))).unwrap();
-    board.set(2, 7, Some((0, PlayerColor::Black))).unwrap();
-    board.set(3, 7, Some((2, PlayerColor::Black))).unwrap();
-    board.set(4, 7, Some((3, PlayerColor::Black))).unwrap();
-    board.set(5, 7, Some((0, PlayerColor::Black))).unwrap();
-    board.set(6, 7, Some((4, PlayerColor::Black))).unwrap();
-    board.set(7, 7, Some((1, PlayerColor::Black))).unwrap();
-    let game = GameBuilder::new()
+    let board = Board::new(NonZeroUsize::new(8).unwrap(), NonZeroUsize::new(8).unwrap());
+    let mut game = GameBuilder::new()
         .board(board)
         .piece(
             PieceBuilder::new()
             .id("standard.bishop")
+            .alias("bishop")
             .display_white("standard.w_bishop")
             .display_black("standard.b_bishop")
             .movement(vec![MovementType::RangeAny(Box::new(MovementType::Undirected(1, 1)))])
@@ -54,6 +33,7 @@ fn main() {
         .piece(
             PieceBuilder::new()
             .id("standard.rook")
+            .alias("rook")
             .display_white("standard.w_rook")
             .display_black("standard.b_rook")
             .movement(vec![MovementType::RangeAny(Box::new(MovementType::Undirected(1, 0)))])
@@ -62,6 +42,7 @@ fn main() {
         .piece(
             PieceBuilder::new()
             .id("standard.king")
+            .alias("king")
             .display_white("standard.w_king")
             .display_black("standard.b_king")
             .movement(vec![MovementType::Union(vec![MovementType::Undirected(1, 0), MovementType::Undirected(1, 1)])])
@@ -70,6 +51,7 @@ fn main() {
         .piece(
             PieceBuilder::new()
             .id("standard.queen")
+            .alias("queen")
             .display_white("standard.w_queen")
             .display_black("standard.b_queen")
             .movement(vec![MovementType::RangeAny(Box::new(MovementType::Union(vec![MovementType::Undirected(1, 0), MovementType::Undirected(1, 1)])))])
@@ -78,6 +60,7 @@ fn main() {
         .piece(
             PieceBuilder::new()
             .id("standard.knight")
+            .alias("knight")
             .display_white("standard.w_knight")
             .display_black("standard.b_knight")
             .movement(vec![MovementType::Undirected(2, 1)])
@@ -86,6 +69,7 @@ fn main() {
         .piece(
             PieceBuilder::new()
             .id("standard.pawn")
+            .alias("pawn")
             .display_white("standard.w_pawn")
             .display_black("standard.b_pawn")
             .movement(vec![MovementType::Union(vec![
@@ -122,6 +106,29 @@ fn main() {
             .build()
         )
         .build();
+
+    game.set(0, 0, "rook", PlayerColor::White).unwrap();
+    game.set(1, 0, "knight", PlayerColor::White).unwrap();
+    game.set(2, 0, "bishop", PlayerColor::White).unwrap();
+    game.set(3, 0, "king", PlayerColor::White).unwrap();
+    game.set(4, 0, "queen", PlayerColor::White).unwrap();
+    game.set(5, 0, "bishop", PlayerColor::White).unwrap();
+    game.set(6, 0, "knight", PlayerColor::White).unwrap();
+    game.set(7, 0, "rook", PlayerColor::White).unwrap();
+
+    for x in 0..8 {
+        game.set(x, 6, "pawn", PlayerColor::Black).unwrap();
+        game.set(x, 1, "pawn", PlayerColor::White).unwrap();
+    }
+
+    game.set(0, 7, "rook", PlayerColor::Black).unwrap();
+    game.set(1, 7, "knight", PlayerColor::Black).unwrap();
+    game.set(2, 7, "bishop", PlayerColor::Black).unwrap();
+    game.set(3, 7, "king", PlayerColor::Black).unwrap();
+    game.set(4, 7, "queen", PlayerColor::Black).unwrap();
+    game.set(5, 7, "bishop", PlayerColor::Black).unwrap();
+    game.set(6, 7, "knight", PlayerColor::Black).unwrap();
+    game.set(7, 7, "rook", PlayerColor::Black).unwrap();
     let piece_assets = pieces::load_assets(format!("{}/assets/", env!("CARGO_MANIFEST_DIR")));
     gui::Sharmat::run(Settings::with_flags((piece_assets, game)))
 }
