@@ -1,14 +1,18 @@
-use std::num::NonZeroUsize;
 use sharmat::board::*;
-use sharmat::piece::*;
-use sharmat::rule::*;
 use sharmat::game::*;
 use sharmat::movement::*;
+use sharmat::piece::*;
 use sharmat::player::*;
+use sharmat::rule::*;
+use std::num::NonZeroUsize;
 
 fn assert_set_equal<T: PartialEq + std::fmt::Debug>(a: Vec<T>, b: Vec<T>) {
     let res = set_equal(&a, &b);
-    assert!(res, "Sets A and B are not equal:\nA = {:#?}\nB = {:#?}", a, b)
+    assert!(
+        res,
+        "Sets A and B are not equal:\nA = {:#?}\nB = {:#?}",
+        a, b
+    )
 }
 
 /// Returns `a = b <=> a ⊂ b & b ⊂ a`
@@ -19,7 +23,9 @@ fn set_equal<T: PartialEq>(a: &Vec<T>, b: &Vec<T>) -> bool {
 /// Returns `a ⊂ b`
 /// O(n²), I don't care
 fn set_inclusion<T: PartialEq>(a: &Vec<T>, b: &Vec<T>) -> bool {
-    a.len() == 0 || a.iter().all(|a_elem| b.iter().find(|b_elem| a_elem == *b_elem).is_some())
+    a.len() == 0
+        || a.iter()
+            .all(|a_elem| b.iter().find(|b_elem| a_elem == *b_elem).is_some())
 }
 
 #[test]
@@ -37,8 +43,8 @@ fn movement_undirected() {
             (2, -1),
             (1, -2),
             (-2, -1),
-            (-1, -2)
-        ]
+            (-1, -2),
+        ],
     );
 }
 
@@ -59,7 +65,9 @@ fn movement_range() {
     let board = Board::new(NonZeroUsize::new(8).unwrap(), NonZeroUsize::new(8).unwrap());
     let player = Player::new(true);
     assert_set_equal(
-        double_wazir_movement.flatten(&board, &player, 4, 4).unwrap(),
+        double_wazir_movement
+            .flatten(&board, &player, 4, 4)
+            .unwrap(),
         vec![
             (1, 0),
             (2, 0),
@@ -69,7 +77,7 @@ fn movement_range() {
             (0, 2),
             (0, -1),
             (0, -2),
-        ]
+        ],
     );
 }
 
@@ -95,6 +103,6 @@ fn movement_range_any() {
             (0, -1),
             (0, -2),
             (0, -3),
-        ]
+        ],
     );
 }

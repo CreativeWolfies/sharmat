@@ -1,6 +1,6 @@
-use std::num::NonZeroUsize;
 use self::BoardError::*;
 use super::player::PlayerColor;
+use std::num::NonZeroUsize;
 
 type RawPiece = Option<(usize, PlayerColor)>;
 
@@ -32,7 +32,7 @@ impl Board {
             width,
             height,
             board,
-            name: String::from("Board")
+            name: String::from("Board"),
         }
     }
 

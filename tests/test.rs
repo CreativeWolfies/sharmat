@@ -1,7 +1,7 @@
 // The ~tests~ (the thing that tests functions & stuff)
 
-use sharmat::rule::*;
 use sharmat::player::*;
+use sharmat::rule::*;
 
 #[cfg(test)]
 mod board;
@@ -17,7 +17,7 @@ mod player {
 
     #[test]
     fn player_create() {
-        let _player = Player::new(true, /* UNKNOWN */);
+        let _player = Player::new(true /* UNKNOWN */);
     }
 }
 

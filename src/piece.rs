@@ -1,6 +1,6 @@
-use std::time::{SystemTime, UNIX_EPOCH};
-use std::default::Default;
 use super::movement::*;
+use std::default::Default;
+use std::time::{SystemTime, UNIX_EPOCH};
 
 #[derive(Clone, Debug)]
 pub struct Piece {
@@ -123,7 +123,7 @@ impl PieceBuilder {
             desc: self.piece_desc,
             display_black: self.piece_display_black,
             display_white: self.piece_display_white,
-            movement_type: self.piece_movement_type
+            movement_type: self.piece_movement_type,
         }
     }
 }

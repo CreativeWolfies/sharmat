@@ -7,9 +7,7 @@ fn piece_create_builder() {
 
 #[test]
 fn piece_create_with_id() {
-    let _piece = PieceBuilder::new()
-        .id("piece_name")
-        .build();
+    let _piece = PieceBuilder::new().id("piece_name").build();
 }
 
 #[test]
@@ -30,9 +28,7 @@ fn piece_create_with_description() {
 
 #[test]
 fn piece_get_id() {
-    let piece = PieceBuilder::new()
-        .id("piece_name")
-        .build();
+    let piece = PieceBuilder::new().id("piece_name").build();
     assert_eq!(piece.id(), "piece_name");
 }
 

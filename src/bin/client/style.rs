@@ -1,4 +1,4 @@
-use iced::{Color, Background};
+use iced::{Background, Color};
 
 #[derive(Debug, Clone, Copy)]
 pub struct SharmatStyleSheet {

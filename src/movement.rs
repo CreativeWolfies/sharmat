@@ -72,7 +72,6 @@ pub enum MovementType {
     /// ]);
     /// ```
     Condition(Box<MovementType>, Vec<MovementCondition>),
-
     // Custom?
 }
 
@@ -86,7 +85,7 @@ pub enum MovementCondition {
     /// If the current player is black
     AsBlack,
     /// A custom condition
-    Custom(&'static (dyn Fn(&Board, &Player, usize, usize, isize, isize) -> bool + 'static))
+    Custom(&'static (dyn Fn(&Board, &Player, usize, usize, isize, isize) -> bool + 'static)),
 }
 
 pub type RawMovement = (isize, isize);
@@ -118,10 +117,26 @@ impl fmt::Debug for MovementCondition {
 }
 
 impl MovementCondition {
-    pub fn validate(&self, board: &Board, player: &Player, x: usize, y: usize, dx: isize, dy: isize) -> bool {
+    pub fn validate(
+        &self,
+        board: &Board,
+        player: &Player,
+        x: usize,
+        y: usize,
+        dx: isize,
+        dy: isize,
+    ) -> bool {
         match self {
-            MovementCondition::Capture => board.get((x as isize + dx) as usize, (y as isize + dy) as usize).ok().flatten().is_some(),
-            MovementCondition::NoCapture => board.get((x as isize + dx) as usize, (y as isize + dy) as usize).ok().flatten().is_none(),
+            MovementCondition::Capture => board
+                .get((x as isize + dx) as usize, (y as isize + dy) as usize)
+                .ok()
+                .flatten()
+                .is_some(),
+            MovementCondition::NoCapture => board
+                .get((x as isize + dx) as usize, (y as isize + dy) as usize)
+                .ok()
+                .flatten()
+                .is_none(),
             MovementCondition::AsWhite => player.color.white(),
             MovementCondition::AsBlack => player.color.black(),
             MovementCondition::Custom(f) => f(board, player, x, y, dx, dy),
@@ -133,14 +148,23 @@ impl MovementType {
     /**
     Evaluates a MovementType's branches down into a set of possible, raw movements (dx, dy).
     **/
-    pub fn flatten(&self, board: &Board, player: &Player, x: usize, y: usize) -> Option<Vec<RawMovement>> {
+    pub fn flatten(
+        &self,
+        board: &Board,
+        player: &Player,
+        x: usize,
+        y: usize,
+    ) -> Option<Vec<RawMovement>> {
         match self {
             MovementType::Stay => Some(vec![]),
             MovementType::Undirected(dx, dy) => {
                 let mut res = vec![];
                 let mut try_append = |dx: isize, dy: isize| {
                     if is_within_bounds(board, x as isize + dx, y as isize + dy) {
-                        let target_piece = board.get((x as isize + dx) as usize, (y as isize + dy) as usize).ok().flatten();
+                        let target_piece = board
+                            .get((x as isize + dx) as usize, (y as isize + dy) as usize)
+                            .ok()
+                            .flatten();
                         if target_piece.is_none() || target_piece.unwrap().1 != player.color {
                             res.push((dx, dy));
                         }
@@ -179,7 +203,13 @@ impl MovementType {
                     let (dx, dy) = child_movement.clone();
                     for mult in 1..=(board.width.get().max(board.height.get()) as isize) {
                         if is_within_bounds(board, x as isize + dx * mult, y as isize + dy * mult) {
-                            let target_piece = board.get((x as isize + dx * mult) as usize, (y as isize + dy * mult) as usize).ok().flatten();
+                            let target_piece = board
+                                .get(
+                                    (x as isize + dx * mult) as usize,
+                                    (y as isize + dy * mult) as usize,
+                                )
+                                .ok()
+                                .flatten();
                             if target_piece.is_some() && target_piece.unwrap().1 != player.color {
                                 res.push((dx * mult, dy * mult));
                                 break;
@@ -201,7 +231,13 @@ impl MovementType {
                     let (dx, dy) = child_movement.clone();
                     for mult in 1..=(*max_range as isize) {
                         if is_within_bounds(board, x as isize + dx * mult, y as isize + dy * mult) {
-                            let target_piece = board.get((x as isize + dx * mult) as usize, (y as isize + dy * mult) as usize).ok().flatten();
+                            let target_piece = board
+                                .get(
+                                    (x as isize + dx * mult) as usize,
+                                    (y as isize + dy * mult) as usize,
+                                )
+                                .ok()
+                                .flatten();
                             if target_piece.is_some() && target_piece.unwrap().1 != player.color {
                                 res.push((dx * mult, dy * mult));
                                 break;
@@ -229,7 +265,10 @@ impl MovementType {
             MovementType::Condition(mv, tags) => {
                 let mut res = vec![];
                 for raw_mv in mv.flatten(board, player, x, y)?.into_iter() {
-                    if tags.iter().all(|t| t.validate(board, player, x, y, raw_mv.0, raw_mv.1)) {
+                    if tags
+                        .iter()
+                        .all(|t| t.validate(board, player, x, y, raw_mv.0, raw_mv.1))
+                    {
                         res.push(raw_mv);
                     }
                 }

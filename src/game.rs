@@ -1,8 +1,8 @@
-use std::num::NonZeroUsize;
-use std::default::Default;
 use crate::board::Board;
 use crate::piece::Piece;
 use crate::player::{Player, PlayerColor};
+use std::default::Default;
+use std::num::NonZeroUsize;
 
 #[derive(Debug)]
 pub struct Game {
@@ -26,11 +26,19 @@ impl Game {
     }
 
     pub fn search_piece_alias<'a>(&'a self, alias: &str) -> Vec<&'a Piece> {
-        self.pieces.iter().filter(|x| x.alias_list().contains(&alias.to_string())).collect()
+        self.pieces
+            .iter()
+            .filter(|x| x.alias_list().contains(&alias.to_string()))
+            .collect()
     }
 
     pub fn set(&mut self, x: usize, y: usize, piece: &str, color: PlayerColor) -> Option<()> {
-        let piece_index = self.pieces.iter().enumerate().find(|(_k, x)| x.id() == piece || x.alias_list().contains(&piece.to_string()))?.0;
+        let piece_index = self
+            .pieces
+            .iter()
+            .enumerate()
+            .find(|(_k, x)| x.id() == piece || x.alias_list().contains(&piece.to_string()))?
+            .0;
         self.board.set(x, y, Some((piece_index, color))).ok()
     }
 

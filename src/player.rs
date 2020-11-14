@@ -6,7 +6,7 @@ pub enum PlayerColor {
 
 #[derive(Debug)]
 pub struct Player {
-    pub color: PlayerColor
+    pub color: PlayerColor,
 }
 
 impl PlayerColor {
@@ -21,8 +21,6 @@ impl PlayerColor {
 
 impl Player {
     pub fn new(color: PlayerColor) -> Self {
-        Self {
-            color
-        }
+        Self { color }
     }
 }

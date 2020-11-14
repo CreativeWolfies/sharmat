@@ -1,5 +1,5 @@
-use std::num::NonZeroUsize;
 use sharmat::board::*;
+use std::num::NonZeroUsize;
 
 #[test]
 fn board_create() {
@@ -29,7 +29,10 @@ fn board_set_piece() {
 #[test]
 fn board_oob_set_piece() {
     let mut board = Board::new(NonZeroUsize::new(9).unwrap(), NonZeroUsize::new(8).unwrap());
-    assert_eq!(board.set(20, 20, Some(2)).unwrap_err(), BoardError::OutOfBounds(20, 20));
+    assert_eq!(
+        board.set(20, 20, Some(2)).unwrap_err(),
+        BoardError::OutOfBounds(20, 20)
+    );
 }
 
 #[test]
@@ -37,7 +40,8 @@ fn board_oob_set_piece() {
 fn board_get_piece() {
     for x in 0..9 {
         for y in 0..8 {
-            let mut board = Board::new(NonZeroUsize::new(9).unwrap(), NonZeroUsize::new(8).unwrap());
+            let mut board =
+                Board::new(NonZeroUsize::new(9).unwrap(), NonZeroUsize::new(8).unwrap());
             board.set(x, y, Some(1));
             assert_eq!(board.get(x, y).unwrap(), Some(1));
         }
@@ -62,13 +66,19 @@ fn board_move_piece() {
 #[test]
 fn board_oob_move_piece_first_pos() {
     let mut board = Board::new(NonZeroUsize::new(5).unwrap(), NonZeroUsize::new(5).unwrap());
-    assert_eq!(board.move_piece(6, 6, 0, 0).unwrap_err(), BoardError::OutOfBounds(6, 6));
+    assert_eq!(
+        board.move_piece(6, 6, 0, 0).unwrap_err(),
+        BoardError::OutOfBounds(6, 6)
+    );
 }
 
 #[test]
 fn board_oob_move_piece_scnd_pos() {
     let mut board = Board::new(NonZeroUsize::new(5).unwrap(), NonZeroUsize::new(5).unwrap());
-    assert_eq!(board.move_piece(0, 0, 6, 6).unwrap_err(), BoardError::OutOfBounds(6, 6));
+    assert_eq!(
+        board.move_piece(0, 0, 6, 6).unwrap_err(),
+        BoardError::OutOfBounds(6, 6)
+    );
 }
 
 #[test]
@@ -83,7 +93,10 @@ fn board_clear_piece() {
 #[test]
 fn board_oob_clear_piece() {
     let mut board = Board::new(NonZeroUsize::new(5).unwrap(), NonZeroUsize::new(5).unwrap());
-    assert_eq!(board.clear_pos(6, 6).unwrap_err(), BoardError::OutOfBounds(6, 6));
+    assert_eq!(
+        board.clear_pos(6, 6).unwrap_err(),
+        BoardError::OutOfBounds(6, 6)
+    );
 }
 
 #[test]

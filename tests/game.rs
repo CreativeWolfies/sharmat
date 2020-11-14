@@ -1,7 +1,7 @@
-use std::num::NonZeroUsize;
 use sharmat::board::*;
-use sharmat::piece::*;
 use sharmat::game::*;
+use sharmat::piece::*;
+use std::num::NonZeroUsize;
 
 #[test]
 fn game_create() {
@@ -11,28 +11,21 @@ fn game_create() {
 #[test]
 fn game_create_with_board() {
     let board = Board::new(NonZeroUsize::new(5).unwrap(), NonZeroUsize::new(5).unwrap());
-    let _game = GameBuilder::new()
-        .board(board)
-        .build();
+    let _game = GameBuilder::new().board(board).build();
 }
 
 #[test]
 fn game_create_with_board_push() {
     let board = Board::new(NonZeroUsize::new(5).unwrap(), NonZeroUsize::new(5).unwrap());
     let board2 = Board::new(NonZeroUsize::new(5).unwrap(), NonZeroUsize::new(5).unwrap());
-    let _game = GameBuilder::new()
-        .board(board)
-        .board(board2)
-        .build();
+    let _game = GameBuilder::new().board(board).board(board2).build();
 }
 
 #[test]
 fn game_create_with_boards_push() {
     let board = Board::new(NonZeroUsize::new(5).unwrap(), NonZeroUsize::new(5).unwrap());
     let board2 = Board::new(NonZeroUsize::new(5).unwrap(), NonZeroUsize::new(5).unwrap());
-    let _game = GameBuilder::new()
-        .boards(vec![board, board2])
-        .build();
+    let _game = GameBuilder::new().boards(vec![board, board2]).build();
 }
 
 #[test]
@@ -49,9 +42,7 @@ fn game_create_with_board_and_boards() {
 #[test]
 fn game_get_boards_with_board() {
     let board = Board::new(NonZeroUsize::new(5).unwrap(), NonZeroUsize::new(5).unwrap());
-    let game = GameBuilder::new()
-        .board(board.clone())
-        .build();
+    let game = GameBuilder::new().board(board.clone()).build();
     assert_eq!(game.boards(), &vec![board]);
 }
 
@@ -91,28 +82,21 @@ fn game_get_boards_with_board_and_boards_push() {
 #[test]
 fn game_create_with_piece() {
     let piece = PieceBuilder::new().build();
-    let _game = GameBuilder::new()
-        .piece(piece)
-        .build();
+    let _game = GameBuilder::new().piece(piece).build();
 }
 
 #[test]
 fn game_create_with_piece_push() {
     let piece = PieceBuilder::new().build();
     let piece2 = PieceBuilder::new().build();
-    let _game = GameBuilder::new()
-        .piece(piece)
-        .piece(piece2)
-        .build();
+    let _game = GameBuilder::new().piece(piece).piece(piece2).build();
 }
 
 #[test]
 fn game_create_with_pieces_push() {
     let piece = PieceBuilder::new().build();
     let piece2 = PieceBuilder::new().build();
-    let _game = GameBuilder::new()
-        .pieces(vec![piece, piece2])
-        .build();
+    let _game = GameBuilder::new().pieces(vec![piece, piece2]).build();
 }
 
 #[test]
@@ -129,9 +113,7 @@ fn game_create_with_piece_and_pieces_push() {
 #[test]
 fn game_get_pieces_with_piece() {
     let piece = PieceBuilder::new().build();
-    let game = GameBuilder::new()
-        .piece(piece.clone())
-        .build();
+    let game = GameBuilder::new().piece(piece.clone()).build();
     assert_eq!(*game.pieces(), vec![piece]);
 }
 

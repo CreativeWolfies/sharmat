@@ -4,17 +4,17 @@ extern crate iced;
 extern crate iced_native;
 extern crate iced_wgpu;
 
-use std::num::NonZeroUsize;
 use iced::{Application, Settings};
 use sharmat::board::Board;
-use sharmat::piece::*;
 use sharmat::game::*;
 use sharmat::movement::*;
+use sharmat::piece::*;
 use sharmat::player::*;
+use std::num::NonZeroUsize;
 
 pub mod gui;
-pub mod style;
 pub mod pieces;
+pub mod style;
 
 fn main() {
     // TODO: do this in another thread or idk
@@ -23,87 +23,111 @@ fn main() {
         .board(board)
         .piece(
             PieceBuilder::new()
-            .id("standard.bishop")
-            .alias("bishop")
-            .display_white("standard.w_bishop")
-            .display_black("standard.b_bishop")
-            .movement(vec![MovementType::RangeAny(Box::new(MovementType::Undirected(1, 1)))])
-            .build()
+                .id("standard.bishop")
+                .alias("bishop")
+                .display_white("standard.w_bishop")
+                .display_black("standard.b_bishop")
+                .movement(vec![MovementType::RangeAny(Box::new(
+                    MovementType::Undirected(1, 1),
+                ))])
+                .build(),
         )
         .piece(
             PieceBuilder::new()
-            .id("standard.rook")
-            .alias("rook")
-            .display_white("standard.w_rook")
-            .display_black("standard.b_rook")
-            .movement(vec![MovementType::RangeAny(Box::new(MovementType::Undirected(1, 0)))])
-            .build()
+                .id("standard.rook")
+                .alias("rook")
+                .display_white("standard.w_rook")
+                .display_black("standard.b_rook")
+                .movement(vec![MovementType::RangeAny(Box::new(
+                    MovementType::Undirected(1, 0),
+                ))])
+                .build(),
         )
         .piece(
             PieceBuilder::new()
-            .id("standard.king")
-            .alias("king")
-            .display_white("standard.w_king")
-            .display_black("standard.b_king")
-            .movement(vec![MovementType::Union(vec![MovementType::Undirected(1, 0), MovementType::Undirected(1, 1)])])
-            .build()
+                .id("standard.king")
+                .alias("king")
+                .display_white("standard.w_king")
+                .display_black("standard.b_king")
+                .movement(vec![MovementType::Union(vec![
+                    MovementType::Undirected(1, 0),
+                    MovementType::Undirected(1, 1),
+                ])])
+                .build(),
         )
         .piece(
             PieceBuilder::new()
-            .id("standard.queen")
-            .alias("queen")
-            .display_white("standard.w_queen")
-            .display_black("standard.b_queen")
-            .movement(vec![MovementType::RangeAny(Box::new(MovementType::Union(vec![MovementType::Undirected(1, 0), MovementType::Undirected(1, 1)])))])
-            .build()
+                .id("standard.queen")
+                .alias("queen")
+                .display_white("standard.w_queen")
+                .display_black("standard.b_queen")
+                .movement(vec![MovementType::RangeAny(Box::new(MovementType::Union(
+                    vec![
+                        MovementType::Undirected(1, 0),
+                        MovementType::Undirected(1, 1),
+                    ],
+                )))])
+                .build(),
         )
         .piece(
             PieceBuilder::new()
-            .id("standard.knight")
-            .alias("knight")
-            .display_white("standard.w_knight")
-            .display_black("standard.b_knight")
-            .movement(vec![MovementType::Undirected(2, 1)])
-            .build()
+                .id("standard.knight")
+                .alias("knight")
+                .display_white("standard.w_knight")
+                .display_black("standard.b_knight")
+                .movement(vec![MovementType::Undirected(2, 1)])
+                .build(),
         )
         .piece(
             PieceBuilder::new()
-            .id("standard.pawn")
-            .alias("pawn")
-            .display_white("standard.w_pawn")
-            .display_black("standard.b_pawn")
-            .movement(vec![MovementType::Union(vec![
-                MovementType::Condition(Box::new(MovementType::Directed(0, 1)), vec![MovementCondition::AsWhite, MovementCondition::NoCapture]),
-                MovementType::Condition(Box::new(MovementType::Directed(0, -1)), vec![MovementCondition::AsBlack, MovementCondition::NoCapture]),
-                MovementType::Condition(
-                    Box::new(MovementType::Union(vec![
-                        MovementType::Directed(1, 1), MovementType::Directed(-1, 1)
-                    ])),
-                    vec![MovementCondition::AsWhite, MovementCondition::Capture]
-                ),
-                MovementType::Condition(
-                    Box::new(MovementType::Union(vec![
-                        MovementType::Directed(1, -1), MovementType::Directed(-1, -1)
-                    ])),
-                    vec![MovementCondition::AsBlack, MovementCondition::Capture]
-                ),
-                MovementType::Condition(Box::new(MovementType::Directed(0, 2)), vec![
-                    MovementCondition::AsWhite,
-                    MovementCondition::NoCapture,
-                    MovementCondition::Custom(&|_b, _p, _x, y, _dx, _dy| {
-                        y == 1
-                    })
-                ]),
-                MovementType::Condition(Box::new(MovementType::Directed(0, -2)), vec![
-                    MovementCondition::AsBlack,
-                    MovementCondition::NoCapture,
-                    MovementCondition::Custom(&|b, _p, _x, y, _dx, _dy| {
-                        y == b.height.get() - 2
-                    })
-                ]),
-                // TODO: en-passant :(
-            ])])
-            .build()
+                .id("standard.pawn")
+                .alias("pawn")
+                .display_white("standard.w_pawn")
+                .display_black("standard.b_pawn")
+                .movement(vec![MovementType::Union(vec![
+                    MovementType::Condition(
+                        Box::new(MovementType::Directed(0, 1)),
+                        vec![MovementCondition::AsWhite, MovementCondition::NoCapture],
+                    ),
+                    MovementType::Condition(
+                        Box::new(MovementType::Directed(0, -1)),
+                        vec![MovementCondition::AsBlack, MovementCondition::NoCapture],
+                    ),
+                    MovementType::Condition(
+                        Box::new(MovementType::Union(vec![
+                            MovementType::Directed(1, 1),
+                            MovementType::Directed(-1, 1),
+                        ])),
+                        vec![MovementCondition::AsWhite, MovementCondition::Capture],
+                    ),
+                    MovementType::Condition(
+                        Box::new(MovementType::Union(vec![
+                            MovementType::Directed(1, -1),
+                            MovementType::Directed(-1, -1),
+                        ])),
+                        vec![MovementCondition::AsBlack, MovementCondition::Capture],
+                    ),
+                    MovementType::Condition(
+                        Box::new(MovementType::Directed(0, 2)),
+                        vec![
+                            MovementCondition::AsWhite,
+                            MovementCondition::NoCapture,
+                            MovementCondition::Custom(&|_b, _p, _x, y, _dx, _dy| y == 1),
+                        ],
+                    ),
+                    MovementType::Condition(
+                        Box::new(MovementType::Directed(0, -2)),
+                        vec![
+                            MovementCondition::AsBlack,
+                            MovementCondition::NoCapture,
+                            MovementCondition::Custom(&|b, _p, _x, y, _dx, _dy| {
+                                y == b.height.get() - 2
+                            }),
+                        ],
+                    ),
+                    // TODO: en-passant :(
+                ])])
+                .build(),
         )
         .player(Player::new(PlayerColor::White))
         .player(Player::new(PlayerColor::Black))
