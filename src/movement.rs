@@ -140,7 +140,10 @@ impl MovementType {
                 let mut res = vec![];
                 let mut try_append = |dx: isize, dy: isize| {
                     if is_within_bounds(board, x as isize + dx, y as isize + dy) {
-                        res.push((dx, dy));
+                        let target_piece = board.get((x as isize + dx) as usize, (y as isize + dy) as usize).ok().flatten();
+                        if target_piece.is_none() || target_piece.unwrap().1 != player.color {
+                            res.push((dx, dy));
+                        }
                     }
                 };
                 let dx = *dx as isize;
@@ -176,7 +179,15 @@ impl MovementType {
                     let (dx, dy) = child_movement.clone();
                     for mult in 1..=(board.width.get().max(board.height.get()) as isize) {
                         if is_within_bounds(board, x as isize + dx * mult, y as isize + dy * mult) {
-                            res.push((dx * mult, dy * mult));
+                            let target_piece = board.get((x as isize + dx * mult) as usize, (y as isize + dy * mult) as usize).ok().flatten();
+                            if target_piece.is_some() && target_piece.unwrap().1 != player.color {
+                                res.push((dx * mult, dy * mult));
+                                break;
+                            } else if target_piece.is_some() {
+                                break;
+                            } else {
+                                res.push((dx * mult, dy * mult));
+                            }
                         } else {
                             break;
                         }
@@ -190,7 +201,15 @@ impl MovementType {
                     let (dx, dy) = child_movement.clone();
                     for mult in 1..=(*max_range as isize) {
                         if is_within_bounds(board, x as isize + dx * mult, y as isize + dy * mult) {
-                            res.push((dx * mult, dy * mult));
+                            let target_piece = board.get((x as isize + dx * mult) as usize, (y as isize + dy * mult) as usize).ok().flatten();
+                            if target_piece.is_some() && target_piece.unwrap().1 != player.color {
+                                res.push((dx * mult, dy * mult));
+                                break;
+                            } else if target_piece.is_some() {
+                                break;
+                            } else {
+                                res.push((dx * mult, dy * mult));
+                            }
                         } else {
                             break;
                         }
