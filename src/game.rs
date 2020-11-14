@@ -9,6 +9,7 @@ pub struct Game {
     pieces: Vec<Piece>,
     board: Board,
     pub players: Vec<Player>,
+    current_player: usize,
 }
 
 impl Game {
@@ -35,6 +36,17 @@ impl Game {
 
     pub fn player(&self, color: PlayerColor) -> Option<&Player> {
         self.players.iter().find(|p| p.color == color)
+    }
+
+    pub fn current_player(&self) -> Option<&Player> {
+        self.players.get(self.current_player)
+    }
+
+    pub fn next_player(&mut self) {
+        self.current_player += 1;
+        if self.current_player >= self.players.len() {
+            self.current_player = 0;
+        }
     }
 }
 
@@ -84,6 +96,7 @@ impl GameBuilder {
             board: self.game_board,
             pieces: self.game_pieces,
             players: self.game_players,
+            current_player: 0,
         }
     }
 }

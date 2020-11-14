@@ -1,22 +1,18 @@
+use super::style::SharmatStyleSheet;
 use iced::{
-    executor,
-    Application, Container, Element, Length, Point, Size, Color, Row, Command, Background,
+    executor, Application, Background, Color, Command, Container, Element, Length, Point, Row, Size,
 };
 use iced_native::{
-    widget::{Widget, svg::Handle},
     layout,
+    widget::{svg::Handle, Widget},
     MouseCursor, Rectangle,
 };
-use iced_wgpu::{Renderer, Primitive, Defaults};
-use sharmat::{
-    player::PlayerColor,
-    game::*,
-};
-use super::style::SharmatStyleSheet;
-use std::collections::HashMap;
-use std::rc::Rc;
+use iced_wgpu::{Defaults, Primitive, Renderer};
+use sharmat::{game::*, player::PlayerColor};
 use std::cell::RefCell;
+use std::collections::HashMap;
 use std::hash::Hash;
+use std::rc::Rc;
 
 /// Main window model
 #[derive(Debug)]
@@ -41,6 +37,7 @@ pub struct GBoard {
     pub fill_light: Color,
     pub fill_dark_hl: Color,
     pub fill_light_hl: Color,
+    pub highlight_border_ratio: f32,
     pub render_hints: bool,
     pub piece_assets: Rc<HashMap<String, Handle>>,
 }
@@ -52,12 +49,15 @@ impl Application for Sharmat {
     type Flags = (HashMap<String, Handle>, Game, bool);
 
     fn new(flags: Self::Flags) -> (Self, Command<Self::Message>) {
-        (Self {
-            game: Rc::new(RefCell::new(flags.1)),
-            stylesheet: SharmatStyleSheet::default(),
-            piece_assets: Rc::new(flags.0),
-            render_hints: flags.2,
-        }, Command::none())
+        (
+            Self {
+                game: Rc::new(RefCell::new(flags.1)),
+                stylesheet: SharmatStyleSheet::default(),
+                piece_assets: Rc::new(flags.0),
+                render_hints: flags.2,
+            },
+            Command::none(),
+        )
     }
 
     fn title(&self) -> String {
@@ -66,21 +66,27 @@ impl Application for Sharmat {
 
     fn view(&mut self) -> Element<Self::Message> {
         Container::new(
-            Row::new()
-                .push(
-                    Container::new::<iced_native::Element<_, _>>(GBoard::new(self.game.clone(), self.piece_assets.clone(), self.render_hints).into())
-                    .width(Length::Units(600))
-                    .height(Length::Units(600))
-                    .padding(10)
+            Row::new().push(
+                Container::new::<iced_native::Element<_, _>>(
+                    GBoard::new(
+                        self.game.clone(),
+                        self.piece_assets.clone(),
+                        self.render_hints,
+                    )
+                    .into(),
                 )
+                .width(Length::Units(600))
+                .height(Length::Units(600))
+                .padding(10),
+            ),
         )
-            .padding(10)
-            .width(Length::Fill)
-            .height(Length::Fill)
-            .center_x()
-            .center_y()
-            .style(self.stylesheet)
-            .into()
+        .padding(10)
+        .width(Length::Fill)
+        .height(Length::Fill)
+        .center_x()
+        .center_y()
+        .style(self.stylesheet)
+        .into()
     }
 
     fn update(&mut self, _message: Self::Message) -> Command<Self::Message> {
@@ -89,15 +95,20 @@ impl Application for Sharmat {
 }
 
 impl GBoard {
-    pub fn new(game: Rc<RefCell<Game>>, piece_assets: Rc<HashMap<String, Handle>>, render_hints: bool) -> GBoard {
+    pub fn new(
+        game: Rc<RefCell<Game>>,
+        piece_assets: Rc<HashMap<String, Handle>>,
+        render_hints: bool,
+    ) -> GBoard {
         GBoard {
             game,
             fill_dark: Color::from_rgb8(226, 149, 120),
             fill_light: Color::from_rgb8(255, 221, 210),
             fill_dark_hl: Color::from_rgb8(113, 129, 120),
-            fill_light_hl: Color::from_rgb8(170, 184, 180),
+            fill_light_hl: Color::from_rgb8(128, 165, 165),
             piece_assets,
             render_hints,
+            highlight_border_ratio: 0.15,
         }
     }
 
@@ -139,7 +150,8 @@ impl<'a, Message> Widget<Message, Renderer> for GBoard {
     fn layout(&self, _renderer: &Renderer, limits: &layout::Limits) -> layout::Node {
         layout::Node::new(Size::new(
             self.tile_size(limits.max().width, limits.max().height) * self.get_board_width() as f32,
-            self.tile_size(limits.max().width, limits.max().height) * self.get_board_height() as f32,
+            self.tile_size(limits.max().width, limits.max().height)
+                * self.get_board_height() as f32,
         ))
     }
 
@@ -147,22 +159,56 @@ impl<'a, Message> Widget<Message, Renderer> for GBoard {
         self.game.borrow().board().hash(hasher);
     }
 
-    fn draw(&self, _renderer: &mut Renderer, _defaults: &Defaults, layout: layout::Layout<'_>, mouse: Point) -> (Primitive, MouseCursor) {
+    fn draw(
+        &self,
+        _renderer: &mut Renderer,
+        _defaults: &Defaults,
+        layout: layout::Layout<'_>,
+        mouse: Point,
+    ) -> (Primitive, MouseCursor) {
         let mut res: Vec<Primitive> = Vec::new();
         let tile_size = self.tile_size(layout.bounds().width, layout.bounds().height);
+        let hl_width = tile_size as f32 * self.highlight_border_ratio;
 
-        let (m_x, m_y) = if layout.bounds().contains(mouse) {(
+        let (m_x, m_y) = if layout.bounds().contains(mouse) {
+            (
                 ((mouse.x - layout.bounds().x) / tile_size).floor() as usize,
                 ((mouse.y - layout.bounds().y) / tile_size).floor() as usize,
-        )} else {(std::usize::MAX, std::usize::MAX)};
+            )
+        } else {
+            (std::usize::MAX, std::usize::MAX)
+        };
 
-        let hovered_piece_raw = if m_x == std::usize::MAX {None} else {self.get(m_x, m_y)};
-        let hints: Vec<(usize, usize)> = if hovered_piece_raw.is_some() && self.render_hints {
+        let hovered_piece_raw = if m_x == std::usize::MAX {
+            None
+        } else {
+            self.get(m_x, m_y)
+        };
+        let hints: Vec<(usize, usize)> = if hovered_piece_raw.is_some()
+            && hovered_piece_raw.unwrap().1
+                == self
+                    .game
+                    .borrow()
+                    .current_player()
+                    .expect("Expected the game to have at least one player!")
+                    .color
+            && self.render_hints
+        {
             let raw = &hovered_piece_raw.unwrap();
             let game = self.game.borrow();
-            let hovered_piece = game.pieces().get(raw.0).expect(&format!("Couldn't find piece {}", raw.0));
-            let hovered_player = game.player(raw.1).expect(&format!("Couldn't find player {:?}", raw.1));
-            hovered_piece.movement_type()[0].flatten(self.game.borrow().board(), hovered_player, m_x, m_y).unwrap().into_iter().map(|(dx, dy)| ((m_x as isize + dx) as usize, (m_y as isize + dy) as usize)).collect()
+            let hovered_piece = game
+                .pieces()
+                .get(raw.0)
+                .expect(&format!("Couldn't find piece {}", raw.0));
+            let hovered_player = game
+                .player(raw.1)
+                .expect(&format!("Couldn't find player {:?}", raw.1));
+            hovered_piece.movement_type()[0]
+                .flatten(self.game.borrow().board(), hovered_player, m_x, m_y)
+                .unwrap()
+                .into_iter()
+                .map(|(dx, dy)| ((m_x as isize + dx) as usize, (m_y as isize + dy) as usize))
+                .collect()
         } else {
             vec![]
         };
@@ -171,13 +217,32 @@ impl<'a, Message> Widget<Message, Renderer> for GBoard {
             for x in 0..self.get_board_width() {
                 let v_x = layout.bounds().x + tile_size * x as f32;
                 let v_y = layout.bounds().y + tile_size * y as f32;
-                let bounds = Rectangle {x: v_x, y: v_y, width: tile_size, height: tile_size};
+                let bounds = Rectangle {
+                    x: v_x,
+                    y: v_y,
+                    width: tile_size,
+                    height: tile_size,
+                };
+                let sub_bounds = Rectangle {
+                    x: v_x + hl_width,
+                    y: v_y + hl_width,
+                    width: tile_size - 2.0 * hl_width,
+                    height: tile_size - 2.0 * hl_width,
+                };
 
                 // Display piece at x, y
                 if let Some((piece_index, piece_color)) = self.get(x, y) {
                     if let Some(piece) = self.game.borrow().pieces().get(piece_index) {
                         res.push(Primitive::Svg {
-                            handle: self.piece_assets.get(if piece_color.white() {piece.display_white()} else {piece.display_black()}).unwrap().clone(),
+                            handle: self
+                                .piece_assets
+                                .get(if piece_color.white() {
+                                    piece.display_white()
+                                } else {
+                                    piece.display_black()
+                                })
+                                .unwrap()
+                                .clone(),
                             bounds,
                         });
                     } else {
@@ -185,23 +250,55 @@ impl<'a, Message> Widget<Message, Renderer> for GBoard {
                     }
                 }
 
-                res.push(Primitive::Quad {
-                    bounds: bounds.clone(),
-                    background: if hints.iter().find(|(x2, y2)| x == *x2 && y == *y2).is_some() {
-                        if (x + y) % 2 == 0 {Background::Color(self.fill_light_hl)} else {Background::Color(self.fill_dark_hl)}
-                    } else {
-                        if (x + y) % 2 == 0 {Background::Color(self.fill_light)} else {Background::Color(self.fill_dark)}
-                    },
-                    border_radius: 0,
-                    border_width: 0,
-                    border_color: Color::TRANSPARENT,
-                });
+                if hints.iter().find(|(x2, y2)| x == *x2 && y == *y2).is_some() {
+                    // inner tile
+                    res.push(Primitive::Quad {
+                        bounds: bounds.clone(),
+                        background: if (x + y) % 2 == 0 {
+                            Background::Color(self.fill_light_hl)
+                        } else {
+                            Background::Color(self.fill_dark_hl)
+                        },
+                        border_radius: 0,
+                        border_width: 0,
+                        border_color: Color::TRANSPARENT,
+                    });
+                    // outer tile
+                    res.push(Primitive::Quad {
+                        bounds: sub_bounds.clone(),
+                        background: if (x + y) % 2 == 0 {
+                            Background::Color(self.fill_light)
+                        } else {
+                            Background::Color(self.fill_dark)
+                        },
+                        border_radius: 0,
+                        border_width: 0,
+                        border_color: Color::TRANSPARENT,
+                    });
+                } else {
+                    // entire tile
+                    res.push(Primitive::Quad {
+                        bounds: bounds.clone(),
+                        background: if (x + y) % 2 == 0 {
+                            Background::Color(self.fill_light)
+                        } else {
+                            Background::Color(self.fill_dark)
+                        },
+                        border_radius: 0,
+                        border_width: 0,
+                        border_color: Color::TRANSPARENT,
+                    });
+                }
             }
         }
 
         (
-            Primitive::Group {primitives: res},
-            if hovered_piece_raw.is_some() {MouseCursor::Pointer} else {MouseCursor::Idle}
+            Primitive::Group { primitives: res },
+            if hovered_piece_raw.is_some() {
+                MouseCursor::Pointer
+            } else {
+                MouseCursor::Idle
+            },
         )
     }
 }
