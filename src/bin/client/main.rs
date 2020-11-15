@@ -156,5 +156,5 @@ fn main() {
     game.set(6, 7, "knight", PlayerColor::Black).unwrap();
     game.set(7, 7, "rook", PlayerColor::Black).unwrap();
     let piece_assets = pieces::load_assets(format!("{}/assets/", env!("CARGO_MANIFEST_DIR")));
-    gui::Sharmat::run(Settings::with_flags((piece_assets, game, true)))
+    gui::Sharmat::run(Settings::with_flags((piece_assets, game, true, false)))
 }

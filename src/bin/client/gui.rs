@@ -20,6 +20,7 @@ pub struct Sharmat {
     pub game: Rc<RefCell<Game>>,
     pub stylesheet: SharmatStyleSheet,
     pub render_hints: bool,
+    pub render_hints_opponent: bool,
     pub piece_assets: Rc<HashMap<String, Handle>>,
 }
 
@@ -39,14 +40,15 @@ pub struct GBoard {
     pub fill_light_hl: Color,
     pub highlight_border_ratio: f32,
     pub render_hints: bool,
+    pub render_hints_opponent: bool,
     pub piece_assets: Rc<HashMap<String, Handle>>,
 }
 
 impl Application for Sharmat {
     type Executor = executor::Null;
     type Message = Message;
-    /// SVG handles, Game structure, whether or not to show hints
-    type Flags = (HashMap<String, Handle>, Game, bool);
+    /// SVG handles, Game structure, whether or not to show hints, whether or not to also show hints for the opponent's pieces
+    type Flags = (HashMap<String, Handle>, Game, bool, bool);
 
     fn new(flags: Self::Flags) -> (Self, Command<Self::Message>) {
         (
@@ -55,6 +57,7 @@ impl Application for Sharmat {
                 stylesheet: SharmatStyleSheet::default(),
                 piece_assets: Rc::new(flags.0),
                 render_hints: flags.2,
+                render_hints_opponent: flags.3
             },
             Command::none(),
         )
@@ -72,6 +75,7 @@ impl Application for Sharmat {
                         self.game.clone(),
                         self.piece_assets.clone(),
                         self.render_hints,
+                        self.render_hints_opponent,
                     )
                     .into(),
                 )
@@ -99,6 +103,7 @@ impl GBoard {
         game: Rc<RefCell<Game>>,
         piece_assets: Rc<HashMap<String, Handle>>,
         render_hints: bool,
+        render_hints_opponent: bool,
     ) -> GBoard {
         GBoard {
             game,
@@ -108,6 +113,7 @@ impl GBoard {
             fill_light_hl: Color::from_rgb8(128, 165, 165),
             piece_assets,
             render_hints,
+            render_hints_opponent,
             highlight_border_ratio: 0.15,
         }
     }
@@ -135,6 +141,51 @@ impl GBoard {
     #[inline]
     pub fn get(&self, x: usize, y: usize) -> Option<(usize, PlayerColor)> {
         self.game.borrow().board().get(x, y).ok().flatten()
+    }
+
+    fn get_hints(&self, m_x: usize, m_y: usize) -> Vec<(usize, usize)> {
+        let hovered_piece_raw = if m_x == std::usize::MAX {
+            None
+        } else {
+            self.get(m_x, m_y)
+        };
+
+        if hovered_piece_raw.is_some()
+            && (
+                hovered_piece_raw.unwrap().1 == self.game.borrow().current_player().expect("No player?").color
+                || self.render_hints_opponent
+            )
+            && self.render_hints
+        {
+            let raw = &hovered_piece_raw.unwrap();
+            let game = self.game.borrow();
+            let hovered_piece = game
+                .pieces()
+                .get(raw.0)
+                .expect(&format!("Couldn't find piece {}", raw.0));
+            let hovered_player = game
+                .player(raw.1)
+                .expect(&format!("Couldn't find player {:?}", raw.1));
+            hovered_piece.movement_type()[0]
+                .flatten(self.game.borrow().board(), hovered_player, m_x, m_y)
+                .unwrap()
+                .into_iter()
+                .map(|(dx, dy)| ((m_x as isize + dx) as usize, (m_y as isize + dy) as usize))
+                .collect()
+        } else {
+            vec![]
+        }
+    }
+
+    fn get_mouse_pos(&self, bounds: Rectangle, mouse: Point, tile_size: f32) -> (usize, usize) {
+        if bounds.contains(mouse) {
+            (
+                ((mouse.x - bounds.x) / tile_size).floor() as usize,
+                ((mouse.y - bounds.y) / tile_size).floor() as usize,
+            )
+        } else {
+            (std::usize::MAX, std::usize::MAX)
+        }
     }
 }
 
@@ -170,48 +221,9 @@ impl<'a, Message> Widget<Message, Renderer> for GBoard {
         let tile_size = self.tile_size(layout.bounds().width, layout.bounds().height);
         let hl_width = tile_size as f32 * self.highlight_border_ratio;
 
-        let (m_x, m_y) = if layout.bounds().contains(mouse) {
-            (
-                ((mouse.x - layout.bounds().x) / tile_size).floor() as usize,
-                ((mouse.y - layout.bounds().y) / tile_size).floor() as usize,
-            )
-        } else {
-            (std::usize::MAX, std::usize::MAX)
-        };
+        let (m_x, m_y) = self.get_mouse_pos(layout.bounds(), mouse, tile_size);
 
-        let hovered_piece_raw = if m_x == std::usize::MAX {
-            None
-        } else {
-            self.get(m_x, m_y)
-        };
-        let hints: Vec<(usize, usize)> = if hovered_piece_raw.is_some()
-            && hovered_piece_raw.unwrap().1
-                == self
-                    .game
-                    .borrow()
-                    .current_player()
-                    .expect("Expected the game to have at least one player!")
-                    .color
-            && self.render_hints
-        {
-            let raw = &hovered_piece_raw.unwrap();
-            let game = self.game.borrow();
-            let hovered_piece = game
-                .pieces()
-                .get(raw.0)
-                .expect(&format!("Couldn't find piece {}", raw.0));
-            let hovered_player = game
-                .player(raw.1)
-                .expect(&format!("Couldn't find player {:?}", raw.1));
-            hovered_piece.movement_type()[0]
-                .flatten(self.game.borrow().board(), hovered_player, m_x, m_y)
-                .unwrap()
-                .into_iter()
-                .map(|(dx, dy)| ((m_x as isize + dx) as usize, (m_y as isize + dy) as usize))
-                .collect()
-        } else {
-            vec![]
-        };
+        let hints = self.get_hints(m_x, m_y);
 
         for y in 0..self.get_board_height() {
             for x in 0..self.get_board_width() {
@@ -294,7 +306,7 @@ impl<'a, Message> Widget<Message, Renderer> for GBoard {
 
         (
             Primitive::Group { primitives: res },
-            if hovered_piece_raw.is_some() {
+            if m_x != std::usize::MAX && self.get(m_x, m_y).is_some() {
                 MouseCursor::Pointer
             } else {
                 MouseCursor::Idle
