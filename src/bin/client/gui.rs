@@ -72,7 +72,7 @@ impl Application for Sharmat {
     }
 
     fn view(&mut self) -> Element<Self::Message> {
-        let res = Container::new(
+        Container::new(
             Row::new().push(
                 Container::new::<iced_native::Element<_, _>>(
                     GBoard::new(
