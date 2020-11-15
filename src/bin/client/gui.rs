@@ -1,4 +1,15 @@
+// Rendering main logic
+
 use super::style::SharmatStyleSheet;
+use super::settings::*;
+
+use sharmat::{game::*, player::PlayerColor};
+
+use std::cell::RefCell;
+use std::collections::HashMap;
+use std::hash::Hash;
+use std::rc::Rc;
+
 use iced::{
     executor, Application, Background, Color, Command, Container, Element, Length, Point, Row, Size,
 };
@@ -8,19 +19,13 @@ use iced_native::{
     MouseCursor, Rectangle,
 };
 use iced_wgpu::{Defaults, Primitive, Renderer};
-use sharmat::{game::*, player::PlayerColor};
-use std::cell::RefCell;
-use std::collections::HashMap;
-use std::hash::Hash;
-use std::rc::Rc;
 
 /// Main window model
 #[derive(Debug)]
 pub struct Sharmat {
     pub game: Rc<RefCell<Game>>,
     pub stylesheet: SharmatStyleSheet,
-    pub render_hints: bool,
-    pub render_hints_opponent: bool,
+    pub settings: SharmatSettings,
     pub piece_assets: Rc<HashMap<String, Handle>>,
 }
 
@@ -39,16 +44,16 @@ pub struct GBoard {
     pub fill_dark_hl: Color,
     pub fill_light_hl: Color,
     pub highlight_border_ratio: f32,
-    pub render_hints: bool,
-    pub render_hints_opponent: bool,
+    pub settings: SharmatSettings,
     pub piece_assets: Rc<HashMap<String, Handle>>,
+    pub flip_board: bool,
 }
 
 impl Application for Sharmat {
     type Executor = executor::Null;
     type Message = Message;
     /// SVG handles, Game structure, whether or not to show hints, whether or not to also show hints for the opponent's pieces
-    type Flags = (HashMap<String, Handle>, Game, bool, bool);
+    type Flags = (HashMap<String, Handle>, Game, HashMap<String, SharmatSettingType>);
 
     fn new(flags: Self::Flags) -> (Self, Command<Self::Message>) {
         (
@@ -56,8 +61,7 @@ impl Application for Sharmat {
                 game: Rc::new(RefCell::new(flags.1)),
                 stylesheet: SharmatStyleSheet::default(),
                 piece_assets: Rc::new(flags.0),
-                render_hints: flags.2,
-                render_hints_opponent: flags.3
+                settings: SharmatSettings::new(flags.2),
             },
             Command::none(),
         )
@@ -68,14 +72,14 @@ impl Application for Sharmat {
     }
 
     fn view(&mut self) -> Element<Self::Message> {
-        Container::new(
+        let res = Container::new(
             Row::new().push(
                 Container::new::<iced_native::Element<_, _>>(
                     GBoard::new(
                         self.game.clone(),
                         self.piece_assets.clone(),
-                        self.render_hints,
-                        self.render_hints_opponent,
+                        self.settings.clone(),
+                        true,
                     )
                     .into(),
                 )
@@ -102,8 +106,8 @@ impl GBoard {
     pub fn new(
         game: Rc<RefCell<Game>>,
         piece_assets: Rc<HashMap<String, Handle>>,
-        render_hints: bool,
-        render_hints_opponent: bool,
+        settings: SharmatSettings,
+        flip_board: bool,
     ) -> GBoard {
         GBoard {
             game,
@@ -112,9 +116,9 @@ impl GBoard {
             fill_dark_hl: Color::from_rgb8(113, 129, 120),
             fill_light_hl: Color::from_rgb8(128, 165, 165),
             piece_assets,
-            render_hints,
-            render_hints_opponent,
+            settings: settings.clone(),
             highlight_border_ratio: 0.15,
+            flip_board,
         }
     }
 
@@ -151,11 +155,15 @@ impl GBoard {
         };
 
         if hovered_piece_raw.is_some()
-            && (
-                hovered_piece_raw.unwrap().1 == self.game.borrow().current_player().expect("No player?").color
-                || self.render_hints_opponent
-            )
-            && self.render_hints
+            && (hovered_piece_raw.unwrap().1
+                == self
+                    .game
+                    .borrow()
+                    .current_player()
+                    .expect("No player?")
+                    .color
+                || self.render_hints_opponent())
+            && self.render_hints()
         {
             let raw = &hovered_piece_raw.unwrap();
             let game = self.game.borrow();
@@ -186,6 +194,14 @@ impl GBoard {
         } else {
             (std::usize::MAX, std::usize::MAX)
         }
+    }
+
+    pub fn render_hints(&self) -> bool {
+        self.settings.get_bool("render_hints").unwrap_or(true)
+    }
+
+    pub fn render_hints_opponent(&self) -> bool {
+        self.settings.get_bool("render_hints_opponent").unwrap_or(false)
     }
 }
 

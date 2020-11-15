@@ -11,10 +11,12 @@ use sharmat::movement::*;
 use sharmat::piece::*;
 use sharmat::player::*;
 use std::num::NonZeroUsize;
+use std::collections::HashMap;
 
 pub mod gui;
 pub mod pieces;
 pub mod style;
+pub mod settings;
 
 fn main() {
     // TODO: do this in another thread or idk
@@ -156,5 +158,5 @@ fn main() {
     game.set(6, 7, "knight", PlayerColor::Black).unwrap();
     game.set(7, 7, "rook", PlayerColor::Black).unwrap();
     let piece_assets = pieces::load_assets(format!("{}/assets/", env!("CARGO_MANIFEST_DIR")));
-    gui::Sharmat::run(Settings::with_flags((piece_assets, game, true, false)))
+    gui::Sharmat::run(Settings::with_flags((piece_assets, game, HashMap::new())))
 }

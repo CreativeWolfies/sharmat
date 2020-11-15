@@ -9,6 +9,7 @@ default-run = "client"
 [dependencies]
 iced_native = "0.2.2"
 iced_wgpu = "0.2.3"
+chrono = "0.4"
 
 [dependencies.iced]
 version = "0.1"
