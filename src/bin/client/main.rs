@@ -10,13 +10,13 @@ use sharmat::game::*;
 use sharmat::movement::*;
 use sharmat::piece::*;
 use sharmat::player::*;
-use std::num::NonZeroUsize;
 use std::collections::HashMap;
+use std::num::NonZeroUsize;
 
 pub mod gui;
 pub mod pieces;
-pub mod style;
 pub mod settings;
+pub mod style;
 
 fn main() {
     // TODO: do this in another thread or idk

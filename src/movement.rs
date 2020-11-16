@@ -1,5 +1,5 @@
-use super::board::Board;
-use super::player::Player;
+use crate::board::{Board, BoardResult};
+use crate::player::Player;
 use std::fmt;
 
 #[derive(Clone, Debug)]
@@ -281,4 +281,30 @@ impl MovementType {
 #[inline]
 fn is_within_bounds(board: &Board, x: isize, y: isize) -> bool {
     x >= 0 && x < board.width.get() as isize && y >= 0 && y < board.height.get() as isize
+}
+
+#[derive(Clone, Debug)]
+pub enum Action {
+    /// Doing nothing
+    Stay,
+    /// Moving the piece from (x, y) to (x2, y2)
+    Movement(usize, usize, usize, usize),
+    // TODO: promotion
+}
+
+impl Action {
+    pub fn execute(&self, board: &mut Board, _player: &mut Player) -> BoardResult<()> {
+        match self {
+            Action::Stay => Ok(()),
+            Action::Movement(x, y, x2, y2) => {
+                let piece = board.get(*x, *y)?;
+                let target_piece = board.get(*x2, *y2);
+
+                board.set(*x, *y, None)?;
+                board.set(*x2, *y2, piece)?;
+
+                Ok(())
+            }
+        }
+    }
 }

@@ -4,7 +4,7 @@ pub enum PlayerColor {
     Black,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Player {
     pub color: PlayerColor,
 }

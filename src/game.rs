@@ -21,6 +21,10 @@ impl Game {
         &self.board
     }
 
+    pub fn set_board(&mut self, board: Board) {
+        self.board = board;
+    }
+
     pub fn search_piece<'a>(&'a self, id: &str) -> Option<&'a Piece> {
         self.pieces.iter().find(|x| x.id() == id)
     }
@@ -48,6 +52,11 @@ impl Game {
 
     pub fn current_player(&self) -> Option<&Player> {
         self.players.get(self.current_player)
+    }
+
+    pub fn set_current_player(&mut self, player: Player) -> Option<()> {
+        *self.players.get_mut(self.current_player)? = player;
+        Some(())
     }
 
     pub fn next_player(&mut self) {

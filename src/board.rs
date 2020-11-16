@@ -1,5 +1,6 @@
 use self::BoardError::*;
-use super::player::PlayerColor;
+use crate::movement::Action;
+use crate::player::{Player, PlayerColor};
 use std::num::NonZeroUsize;
 
 type RawPiece = Option<(usize, PlayerColor)>;
@@ -83,5 +84,20 @@ impl Board {
 
     pub fn name<'a>(&'a self) -> String {
         self.name.clone()
+    }
+
+    pub fn do_actions<'a>(
+        &self,
+        player: &Player,
+        actions: impl Iterator<Item = &'a Action>,
+    ) -> BoardResult<(Board, Player)> {
+        let mut res_board = self.clone();
+        let mut res_player = player.clone();
+
+        for action in actions {
+            action.execute(&mut res_board, &mut res_player)?;
+        }
+
+        Ok((res_board, res_player))
     }
 }
