@@ -10,7 +10,6 @@ use sharmat::{
     player::{Player, PlayerColor},
 };
 
-use std::cell::RefCell;
 use std::collections::HashMap;
 use std::hash::Hash;
 use std::rc::Rc;
@@ -33,7 +32,8 @@ pub struct Sharmat {
     pub piece_assets: Rc<HashMap<String, Handle>>,
 
     // Current interraction state:
-    piece_touched: Option<(usize, usize)>,
+    last_touch: Option<(usize, usize)>,
+    current_piece: Option<(usize, PlayerColor)>,
     actions: Vec<Action>,
 }
 
@@ -55,7 +55,7 @@ pub struct GBoard<'a> {
     pub highlight_border_ratio: f32,
     pub piece_assets: Rc<HashMap<String, Handle>>,
     pub flip_board: bool,
-    pub piece_touched: Option<(usize, usize)>,
+    pub last_touch: Option<(usize, usize)>,
     pub board: Board,
 }
 
@@ -76,7 +76,8 @@ impl Application for Sharmat {
                 stylesheet: SharmatStyleSheet::default(),
                 piece_assets: Rc::new(flags.0),
                 settings: SharmatSettings::new(flags.2),
-                piece_touched: None,
+                last_touch: None,
+                current_piece: None,
                 actions: Vec::new(),
             },
             Command::none(),
@@ -103,7 +104,7 @@ impl Application for Sharmat {
                         self,
                         self.piece_assets.clone(),
                         true, // TODO :)
-                        self.piece_touched,
+                        self.last_touch,
                         tmp_board,
                     )
                     .into(),
@@ -125,14 +126,15 @@ impl Application for Sharmat {
     fn update(&mut self, message: Self::Message) -> Command<Self::Message> {
         match message {
             SharmatMessage::TileTouched(x, y) => {
-                if let Some((sx, sy)) = self.piece_touched {
+                if let Some((sx, sy)) = self.last_touch {
                     if self.is_action_legal(Action::Movement(sx, sy, x, y)) {
                         self.push_action(Action::Movement(sx, sy, x, y));
                     } else {
-                        self.piece_touched = None;
+                        self.last_touch = None;
+                        self.actions = vec![];
                     }
                 } else {
-                    if let Ok(Some((_piece, color))) = self.game.board().get(x, y) {
+                    if let Ok(Some((piece, color))) = self.game.board().get(x, y) {
                         if color
                             == self
                                 .game
@@ -140,7 +142,8 @@ impl Application for Sharmat {
                                 .expect("No current player?")
                                 .color
                         {
-                            self.piece_touched = Some((x, y));
+                            self.last_touch = Some((x, y));
+                            self.current_piece = Some((piece, color));
                         }
                     }
                 }
@@ -157,13 +160,14 @@ impl Sharmat {
             self.actions.iter(),
         );
         if let Ok((new_board, new_player)) = actions_res {
-            self.piece_touched = None;
+            self.last_touch = None;
 
             self.game.set_board(new_board);
             self.game.set_current_player(new_player);
             self.game.next_player();
             self.actions = Vec::new();
-            self.piece_touched = None;
+            self.last_touch = None;
+            self.current_piece = None;
         }
     }
 
@@ -206,31 +210,23 @@ impl Sharmat {
 
     pub fn push_action(&mut self, action: Action) {
         let mut submit_actions = false;
-        let new_piece_touched = match &action {
+        let new_touch = match &action {
             Action::Movement(_x, _y, x2, y2) => Some((*x2, *y2)),
             _ => None,
         };
         self.actions.push(action);
 
-        if let Some((x, y)) = self.piece_touched {
-            let board = self.game.board();
-            let (new_board, new_current_player) = self
-                .game
-                .board()
-                .do_actions(
-                    self.game.current_player().expect("No current player?"),
-                    self.actions.iter(),
-                )
+        if let Some((piece_raw, color)) = self.current_piece {
+            let (_new_board, new_current_player) = self
+                .get_temporary_state()
                 .unwrap();
-            if let Ok(Some((piece_raw, color))) = board.get(x, y) {
-                if color == new_current_player.color {
-                    if let Some(piece) = self.game.pieces().get(piece_raw) {
-                        if self.actions.len() >= piece.movement_type().len() {
-                            submit_actions = true;
-                        }
-                        if new_piece_touched.is_some() {
-                            self.piece_touched = new_piece_touched;
-                        }
+            if color == new_current_player.color {
+                if let Some(piece) = self.game.pieces().get(piece_raw) {
+                    if self.actions.len() >= piece.movement_type().len() {
+                        submit_actions = true;
+                    }
+                    if new_touch.is_some() {
+                        self.last_touch = new_touch;
                     }
                 }
             }
@@ -247,7 +243,7 @@ impl<'a> GBoard<'a> {
         sharmat: &'a Sharmat,
         piece_assets: Rc<HashMap<String, Handle>>,
         flip_board: bool,
-        piece_touched: Option<(usize, usize)>,
+        last_touch: Option<(usize, usize)>,
         board: Board,
     ) -> GBoard<'a> {
         GBoard {
@@ -259,7 +255,7 @@ impl<'a> GBoard<'a> {
             piece_assets,
             highlight_border_ratio: 0.15,
             flip_board,
-            piece_touched,
+            last_touch,
             board,
         }
     }
@@ -306,9 +302,9 @@ impl<'a> GBoard<'a> {
             return vec![];
         }
 
-        if self.piece_touched.is_some() {
-            x = self.piece_touched.unwrap().0;
-            y = self.piece_touched.unwrap().1;
+        if self.last_touch.is_some() {
+            x = self.last_touch.unwrap().0;
+            y = self.last_touch.unwrap().1;
             self.get_hints_at(x, y)
         } else if x == std::usize::MAX {
             vec![]
@@ -438,7 +434,7 @@ impl<'a> widget::Widget<SharmatMessage, Renderer> for GBoard<'a> {
                     }
                 }
 
-                if self.piece_touched == Some((x, y)) {
+                if self.last_touch == Some((x, y)) {
                     // whole tile
                     res.push(Primitive::Quad {
                         bounds: bounds.clone(),
