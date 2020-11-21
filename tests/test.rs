@@ -17,7 +17,7 @@ mod player {
 
     #[test]
     fn player_create() {
-        let _player = Player::new(true /* UNKNOWN */);
+        let _player = Player::new(PlayerColor::White /* UNKNOWN */);
     }
 }
 

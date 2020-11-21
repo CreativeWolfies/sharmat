@@ -15,68 +15,10 @@ fn game_create_with_board() {
 }
 
 #[test]
-fn game_create_with_board_push() {
-    let board = Board::new(NonZeroUsize::new(5).unwrap(), NonZeroUsize::new(5).unwrap());
-    let board2 = Board::new(NonZeroUsize::new(5).unwrap(), NonZeroUsize::new(5).unwrap());
-    let _game = GameBuilder::new().board(board).board(board2).build();
-}
-
-#[test]
-fn game_create_with_boards_push() {
-    let board = Board::new(NonZeroUsize::new(5).unwrap(), NonZeroUsize::new(5).unwrap());
-    let board2 = Board::new(NonZeroUsize::new(5).unwrap(), NonZeroUsize::new(5).unwrap());
-    let _game = GameBuilder::new().boards(vec![board, board2]).build();
-}
-
-#[test]
-fn game_create_with_board_and_boards() {
-    let board = Board::new(NonZeroUsize::new(5).unwrap(), NonZeroUsize::new(5).unwrap());
-    let board2 = Board::new(NonZeroUsize::new(5).unwrap(), NonZeroUsize::new(5).unwrap());
-    let board3 = Board::new(NonZeroUsize::new(5).unwrap(), NonZeroUsize::new(5).unwrap());
-    let _game = GameBuilder::new()
-        .board(board)
-        .boards(vec![board2, board3])
-        .build();
-}
-
-#[test]
 fn game_get_boards_with_board() {
     let board = Board::new(NonZeroUsize::new(5).unwrap(), NonZeroUsize::new(5).unwrap());
     let game = GameBuilder::new().board(board.clone()).build();
-    assert_eq!(game.boards(), &vec![board]);
-}
-
-#[test]
-fn game_get_boards_with_board_push() {
-    let board = Board::new(NonZeroUsize::new(5).unwrap(), NonZeroUsize::new(5).unwrap());
-    let board2 = Board::new(NonZeroUsize::new(5).unwrap(), NonZeroUsize::new(5).unwrap());
-    let game = GameBuilder::new()
-        .board(board.clone())
-        .board(board2.clone())
-        .build();
-    assert_eq!(*game.boards(), vec![board, board2]);
-}
-
-#[test]
-fn game_get_boards_with_boards_push() {
-    let board = Board::new(NonZeroUsize::new(5).unwrap(), NonZeroUsize::new(5).unwrap());
-    let board2 = Board::new(NonZeroUsize::new(5).unwrap(), NonZeroUsize::new(5).unwrap());
-    let game = GameBuilder::new()
-        .boards(vec![board.clone(), board2.clone()])
-        .build();
-    assert_eq!(*game.boards(), vec![board, board2]);
-}
-
-#[test]
-fn game_get_boards_with_board_and_boards_push() {
-    let board = Board::new(NonZeroUsize::new(5).unwrap(), NonZeroUsize::new(5).unwrap());
-    let board2 = Board::new(NonZeroUsize::new(5).unwrap(), NonZeroUsize::new(5).unwrap());
-    let board3 = Board::new(NonZeroUsize::new(5).unwrap(), NonZeroUsize::new(5).unwrap());
-    let game = GameBuilder::new()
-        .board(board.clone())
-        .boards(vec![board2.clone(), board3.clone()])
-        .build();
-    assert_eq!(*game.boards(), vec![board, board2, board3]);
+    assert_eq!(game.board(), &board);
 }
 
 #[test]

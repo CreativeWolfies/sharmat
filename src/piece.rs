@@ -50,6 +50,16 @@ impl Piece {
     }
 }
 
+impl std::cmp::PartialEq<Piece> for Piece {
+    fn eq(&self, x: &Self) -> bool {
+        self.id == x.id
+            && self.alias == x.alias
+            && self.display_black == x.display_black
+            && self.display_white == x.display_white
+            && self.desc == x.desc
+    }
+}
+
 pub struct PieceBuilder {
     piece_id: String,
     piece_alias: Vec<String>,

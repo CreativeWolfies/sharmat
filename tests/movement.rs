@@ -32,7 +32,7 @@ fn set_inclusion<T: PartialEq>(a: &Vec<T>, b: &Vec<T>) -> bool {
 fn movement_undirected() {
     let knight_movement = MovementType::Undirected(2, 1);
     let board = Board::new(NonZeroUsize::new(8).unwrap(), NonZeroUsize::new(8).unwrap());
-    let player = Player::new(true);
+    let player = Player::new(PlayerColor::White);
     assert_set_equal(
         knight_movement.flatten(&board, &player, 4, 4).unwrap(),
         vec![
@@ -52,7 +52,7 @@ fn movement_undirected() {
 fn movement_directed() {
     let pawn_movement = MovementType::Directed(0, 1);
     let board = Board::new(NonZeroUsize::new(8).unwrap(), NonZeroUsize::new(8).unwrap());
-    let player = Player::new(true);
+    let player = Player::new(PlayerColor::White);
     assert_set_equal(
         pawn_movement.flatten(&board, &player, 4, 4).unwrap(),
         vec![(0, 1)],
@@ -63,7 +63,7 @@ fn movement_directed() {
 fn movement_range() {
     let double_wazir_movement = MovementType::Range(Box::new(MovementType::Undirected(1, 0)), 2);
     let board = Board::new(NonZeroUsize::new(8).unwrap(), NonZeroUsize::new(8).unwrap());
-    let player = Player::new(true);
+    let player = Player::new(PlayerColor::White);
     assert_set_equal(
         double_wazir_movement
             .flatten(&board, &player, 4, 4)
@@ -85,7 +85,7 @@ fn movement_range() {
 fn movement_range_any() {
     let rook_movement = MovementType::RangeAny(Box::new(MovementType::Undirected(1, 0)));
     let board = Board::new(NonZeroUsize::new(8).unwrap(), NonZeroUsize::new(8).unwrap());
-    let player = Player::new(true);
+    let player = Player::new(PlayerColor::White);
     assert_set_equal(
         rook_movement.flatten(&board, &player, 4, 3).unwrap(),
         vec![

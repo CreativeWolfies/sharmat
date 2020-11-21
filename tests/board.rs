@@ -1,5 +1,6 @@
 use sharmat::board::*;
 use std::num::NonZeroUsize;
+use sharmat::player::PlayerColor;
 
 #[test]
 fn board_create() {
@@ -23,14 +24,14 @@ fn board_get_name() {
 #[allow(unused_must_use)]
 fn board_set_piece() {
     let mut board = Board::new(NonZeroUsize::new(9).unwrap(), NonZeroUsize::new(8).unwrap());
-    board.set(0, 0, Some(2));
+    board.set(0, 0, Some((2, PlayerColor::White)));
 }
 
 #[test]
 fn board_oob_set_piece() {
     let mut board = Board::new(NonZeroUsize::new(9).unwrap(), NonZeroUsize::new(8).unwrap());
     assert_eq!(
-        board.set(20, 20, Some(2)).unwrap_err(),
+        board.set(20, 20, Some((2, PlayerColor::White))).unwrap_err(),
         BoardError::OutOfBounds(20, 20)
     );
 }
@@ -42,8 +43,8 @@ fn board_get_piece() {
         for y in 0..8 {
             let mut board =
                 Board::new(NonZeroUsize::new(9).unwrap(), NonZeroUsize::new(8).unwrap());
-            board.set(x, y, Some(1));
-            assert_eq!(board.get(x, y).unwrap(), Some(1));
+            board.set(x, y, Some((1, if (x + y) % 2 == 0 {PlayerColor::White} else {PlayerColor::Black})));
+            assert_eq!(board.get(x, y).unwrap(), Some((1, if (x + y) % 2 == 0 {PlayerColor::White} else {PlayerColor::Black})));
         }
     }
 }
@@ -58,9 +59,9 @@ fn board_oob_get_piece() {
 #[allow(unused_must_use)]
 fn board_move_piece() {
     let mut board = Board::new(NonZeroUsize::new(9).unwrap(), NonZeroUsize::new(8).unwrap());
-    board.set(0, 0, Some(1));
+    board.set(0, 0, Some((1, PlayerColor::White)));
     board.move_piece(0, 0, 3, 3);
-    assert_eq!(board.get(3, 3).unwrap(), Some(1));
+    assert_eq!(board.get(3, 3).unwrap(), Some((1, PlayerColor::White)));
 }
 
 #[test]
@@ -85,7 +86,7 @@ fn board_oob_move_piece_scnd_pos() {
 #[allow(unused_must_use)]
 fn board_clear_piece() {
     let mut board = Board::new(NonZeroUsize::new(9).unwrap(), NonZeroUsize::new(8).unwrap());
-    board.set(0, 0, Some(1));
+    board.set(0, 0, Some((1, PlayerColor::White)));
     board.clear_pos(0, 0);
     assert_eq!(board.get(0, 0).unwrap(), None);
 }
@@ -104,9 +105,9 @@ fn board_oob_clear_piece() {
 fn board_clear_board() {
     let empty_board = Board::new(NonZeroUsize::new(5).unwrap(), NonZeroUsize::new(5).unwrap());
     let mut board = Board::new(NonZeroUsize::new(5).unwrap(), NonZeroUsize::new(5).unwrap());
-    board.set(0, 0, Some(1));
-    board.set(0, 3, Some(2));
-    board.set(3, 0, Some(3));
+    board.set(0, 0, Some((1, PlayerColor::White)));
+    board.set(0, 3, Some((2, PlayerColor::Black)));
+    board.set(3, 0, Some((3, PlayerColor::White)));
     board.clear();
     assert_eq!(board, empty_board);
 }
