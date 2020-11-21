@@ -3,7 +3,12 @@
 use super::settings::*;
 use super::style::SharmatStyleSheet;
 
-use sharmat::{board::{Board, BoardResult}, game::*, movement::Action, player::{Player, PlayerColor}};
+use sharmat::{
+    board::{Board, BoardResult},
+    game::*,
+    movement::Action,
+    player::{Player, PlayerColor},
+};
 
 use std::cell::RefCell;
 use std::collections::HashMap;
@@ -22,7 +27,7 @@ use iced_wgpu::{Defaults, Primitive, Renderer};
 /// Main window model
 #[derive(Debug)]
 pub struct Sharmat {
-    pub game: Rc<RefCell<Game>>,
+    pub game: Game,
     pub stylesheet: SharmatStyleSheet,
     pub settings: SharmatSettings,
     pub piece_assets: Rc<HashMap<String, Handle>>,
@@ -40,15 +45,14 @@ pub enum SharmatMessage {
 
 /// Graphical board (visible representation of the board)
 #[derive(Debug)]
-pub struct GBoard {
-    pub game: Rc<RefCell<Game>>,
+pub struct GBoard<'a> {
+    pub sharmat: &'a Sharmat,
     // pub cache: Cache<Self>,
     pub fill_dark: Color,
     pub fill_light: Color,
     pub fill_dark_hl: Color,
     pub fill_light_hl: Color,
     pub highlight_border_ratio: f32,
-    pub settings: SharmatSettings,
     pub piece_assets: Rc<HashMap<String, Handle>>,
     pub flip_board: bool,
     pub piece_touched: Option<(usize, usize)>,
@@ -68,7 +72,7 @@ impl Application for Sharmat {
     fn new(flags: Self::Flags) -> (Self, Command<Self::Message>) {
         (
             Self {
-                game: Rc::new(RefCell::new(flags.1)),
+                game: flags.1,
                 stylesheet: SharmatStyleSheet::default(),
                 piece_assets: Rc::new(flags.0),
                 settings: SharmatSettings::new(flags.2),
@@ -86,13 +90,9 @@ impl Application for Sharmat {
     fn view(&mut self) -> Element<Self::Message> {
         let (tmp_board, _tmp_player) = self
             .game
-            .borrow()
             .board()
             .do_actions(
-                self.game
-                    .borrow()
-                    .current_player()
-                    .expect("No current player?"),
+                self.game.current_player().expect("No current player?"),
                 self.actions.iter(),
             )
             .unwrap();
@@ -100,9 +100,8 @@ impl Application for Sharmat {
             Row::new().push(
                 Container::new::<iced_native::Element<_, _>>(
                     GBoard::new(
-                        self.game.clone(),
+                        self,
                         self.piece_assets.clone(),
-                        self.settings.clone(),
                         true, // TODO :)
                         self.piece_touched,
                         tmp_board,
@@ -133,11 +132,10 @@ impl Application for Sharmat {
                         self.piece_touched = None;
                     }
                 } else {
-                    if let Ok(Some((_piece, color))) = self.game.borrow().board().get(x, y) {
+                    if let Ok(Some((_piece, color))) = self.game.board().get(x, y) {
                         if color
                             == self
                                 .game
-                                .borrow()
                                 .current_player()
                                 .expect("No current player?")
                                 .color
@@ -154,42 +152,35 @@ impl Application for Sharmat {
 
 impl Sharmat {
     pub fn submit_actions(&mut self) {
-        let actions_res = self.game.borrow().board().do_actions(
-            self.game
-                .borrow()
-                .current_player()
-                .expect("No current player?"),
+        let actions_res = self.game.board().do_actions(
+            self.game.current_player().expect("No current player?"),
             self.actions.iter(),
         );
         if let Ok((new_board, new_player)) = actions_res {
             self.piece_touched = None;
 
-            self.game.borrow_mut().set_board(new_board);
-            self.game.borrow_mut().set_current_player(new_player);
-            self.game.borrow_mut().next_player();
+            self.game.set_board(new_board);
+            self.game.set_current_player(new_player);
+            self.game.next_player();
             self.actions = Vec::new();
             self.piece_touched = None;
         }
     }
 
     pub fn get_temporary_state(&self) -> BoardResult<(Board, Player)> {
-        self.game.borrow().board().do_actions(
-            self.game
-                .borrow()
-                .current_player()
-                .expect("No current player?"),
+        self.game.board().do_actions(
+            self.game.current_player().expect("No current player?"),
             self.actions.iter(),
         )
     }
 
     pub fn is_action_legal(&self, action: Action) -> bool {
-        let game = self.game.borrow();
         let (board, current_player) = self.get_temporary_state().unwrap();
         match action {
             Action::Movement(sx, sy, x, y) => {
                 if let Ok(Some((piece_raw, color))) = board.get(sx, sy) {
                     if color == current_player.color {
-                        if let Some(piece) = game.pieces().get(piece_raw) {
+                        if let Some(piece) = self.game.pieces().get(piece_raw) {
                             return piece
                                 .movement_type()
                                 .get(self.actions.len())
@@ -217,23 +208,23 @@ impl Sharmat {
         let mut submit_actions = false;
         let new_piece_touched = match &action {
             Action::Movement(_x, _y, x2, y2) => Some((*x2, *y2)),
-            _ => None
+            _ => None,
         };
         self.actions.push(action);
 
         if let Some((x, y)) = self.piece_touched {
-            let game = self.game.borrow();
-            let board = game.board();
-            let (new_board, new_current_player) = game
+            let board = self.game.board();
+            let (new_board, new_current_player) = self
+                .game
                 .board()
                 .do_actions(
-                    game.current_player().expect("No current player?"),
+                    self.game.current_player().expect("No current player?"),
                     self.actions.iter(),
                 )
                 .unwrap();
             if let Ok(Some((piece_raw, color))) = board.get(x, y) {
                 if color == new_current_player.color {
-                    if let Some(piece) = game.pieces().get(piece_raw) {
+                    if let Some(piece) = self.game.pieces().get(piece_raw) {
                         if self.actions.len() >= piece.movement_type().len() {
                             submit_actions = true;
                         }
@@ -251,23 +242,21 @@ impl Sharmat {
     }
 }
 
-impl GBoard {
+impl<'a> GBoard<'a> {
     pub fn new(
-        game: Rc<RefCell<Game>>,
+        sharmat: &'a Sharmat,
         piece_assets: Rc<HashMap<String, Handle>>,
-        settings: SharmatSettings,
         flip_board: bool,
         piece_touched: Option<(usize, usize)>,
         board: Board,
-    ) -> GBoard {
+    ) -> GBoard<'a> {
         GBoard {
-            game,
+            sharmat,
             fill_dark: Color::from_rgb8(226, 149, 120),
             fill_light: Color::from_rgb8(255, 221, 210),
             fill_dark_hl: Color::from_rgb8(113, 129, 120),
             fill_light_hl: Color::from_rgb8(128, 165, 165),
             piece_assets,
-            settings: settings.clone(),
             highlight_border_ratio: 0.15,
             flip_board,
             piece_touched,
@@ -300,10 +289,13 @@ impl GBoard {
         self.board.get(x, y).ok().flatten()
     }
 
+    #[inline]
+    pub fn game(&self) -> &Game {
+        &self.sharmat.game
+    }
+
     fn get_self_color(&self) -> PlayerColor {
-        self
-            .game
-            .borrow()
+        self.game()
             .current_player()
             .expect("No current player?")
             .color
@@ -327,13 +319,16 @@ impl GBoard {
 
     fn get_hints_at(&self, x: usize, y: usize) -> Vec<(usize, usize)> {
         match self.get(x, y) {
-            Some((piece_raw, player_color)) if player_color == self.get_self_color() || self.render_hints_opponent() => {
-                let game = self.game.borrow();
-                let piece = game
+            Some((piece_raw, player_color))
+                if player_color == self.get_self_color() || self.render_hints_opponent() =>
+            {
+                let piece = self
+                    .game()
                     .pieces()
                     .get(piece_raw)
                     .expect(&format!("Couldn't find piece {}", piece_raw));
-                let player = game
+                let player = self
+                    .game()
                     .player(player_color)
                     .expect(&format!("Couldn't find player {:?}", player_color));
                 piece.movement_type()[0]
@@ -342,7 +337,7 @@ impl GBoard {
                     .into_iter()
                     .map(|(dx, dy)| ((x as isize + dx) as usize, (y as isize + dy) as usize))
                     .collect()
-            },
+            }
             _ => vec![],
         }
     }
@@ -359,17 +354,18 @@ impl GBoard {
     }
 
     pub fn render_hints(&self) -> bool {
-        self.settings.get_bool("render_hints").unwrap_or(true)
+        self.sharmat.settings.get_bool("render_hints").unwrap_or(true)
     }
 
     pub fn render_hints_opponent(&self) -> bool {
-        self.settings
+        self.sharmat
+            .settings
             .get_bool("render_hints_opponent")
             .unwrap_or(false)
     }
 }
 
-impl<'a> widget::Widget<SharmatMessage, Renderer> for GBoard {
+impl<'a> widget::Widget<SharmatMessage, Renderer> for GBoard<'a> {
     fn width(&self) -> Length {
         Length::Fill
     }
@@ -424,7 +420,7 @@ impl<'a> widget::Widget<SharmatMessage, Renderer> for GBoard {
 
                 // Display piece at x, y
                 if let Some((piece_index, piece_color)) = self.get(x, y) {
-                    if let Some(piece) = self.game.borrow().pieces().get(piece_index) {
+                    if let Some(piece) = self.game().pieces().get(piece_index) {
                         res.push(Primitive::Svg {
                             handle: self
                                 .piece_assets
@@ -533,7 +529,7 @@ impl<'a> widget::Widget<SharmatMessage, Renderer> for GBoard {
     }
 }
 
-impl<'a> Into<iced_native::Element<'a, SharmatMessage, Renderer>> for GBoard {
+impl<'a> Into<iced_native::Element<'a, SharmatMessage, Renderer>> for GBoard<'a> {
     fn into(self) -> iced_native::Element<'a, SharmatMessage, Renderer> {
         iced_native::Element::new(self)
     }
