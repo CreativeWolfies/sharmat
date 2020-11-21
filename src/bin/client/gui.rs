@@ -3,7 +3,7 @@
 use super::settings::*;
 use super::style::SharmatStyleSheet;
 
-use sharmat::{board::Board, game::*, movement::Action, player::PlayerColor};
+use sharmat::{board::{Board, BoardResult}, game::*, movement::Action, player::{Player, PlayerColor}};
 
 use std::cell::RefCell;
 use std::collections::HashMap;
@@ -172,10 +172,19 @@ impl Sharmat {
         }
     }
 
+    pub fn get_temporary_state(&self) -> BoardResult<(Board, Player)> {
+        self.game.borrow().board().do_actions(
+            self.game
+                .borrow()
+                .current_player()
+                .expect("No current player?"),
+            self.actions.iter(),
+        )
+    }
+
     pub fn is_action_legal(&self, action: Action) -> bool {
         let game = self.game.borrow();
-        let board = game.board();
-        let current_player = game.current_player().expect("No current player?");
+        let (board, current_player) = self.get_temporary_state().unwrap();
         match action {
             Action::Movement(sx, sy, x, y) => {
                 if let Ok(Some((piece_raw, color))) = board.get(sx, sy) {
@@ -185,7 +194,7 @@ impl Sharmat {
                                 .movement_type()
                                 .get(self.actions.len())
                                 .map(|mt| {
-                                    mt.flatten(board, current_player, sx, sy)
+                                    mt.flatten(&board, &current_player, sx, sy)
                                         .unwrap()
                                         .iter()
                                         .find(|(x2, y2)| {
@@ -206,6 +215,10 @@ impl Sharmat {
 
     pub fn push_action(&mut self, action: Action) {
         let mut submit_actions = false;
+        let new_piece_touched = match &action {
+            Action::Movement(_x, _y, x2, y2) => Some((*x2, *y2)),
+            _ => None
+        };
         self.actions.push(action);
 
         if let Some((x, y)) = self.piece_touched {
@@ -223,6 +236,9 @@ impl Sharmat {
                     if let Some(piece) = game.pieces().get(piece_raw) {
                         if self.actions.len() >= piece.movement_type().len() {
                             submit_actions = true;
+                        }
+                        if new_piece_touched.is_some() {
+                            self.piece_touched = new_piece_touched;
                         }
                     }
                 }
@@ -284,47 +300,50 @@ impl GBoard {
         self.board.get(x, y).ok().flatten()
     }
 
-    fn get_hints(&self, mut x: usize, mut y: usize) -> Vec<(usize, usize)> {
-        let hovered_piece_raw = if self.piece_touched.is_some() {
+    fn get_self_color(&self) -> PlayerColor {
+        self
+            .game
+            .borrow()
+            .current_player()
+            .expect("No current player?")
+            .color
+    }
+
+    pub fn get_hints(&self, mut x: usize, mut y: usize) -> Vec<(usize, usize)> {
+        if !self.render_hints() {
+            return vec![];
+        }
+
+        if self.piece_touched.is_some() {
             x = self.piece_touched.unwrap().0;
             y = self.piece_touched.unwrap().1;
-            self.get(x, y)
+            self.get_hints_at(x, y)
         } else if x == std::usize::MAX {
-            None
-        } else {
-            self.get(x, y)
-        };
-
-        // Maybe clean up that logic? the self.piece_touched.is_some() just looks dirty
-        if hovered_piece_raw.is_some()
-            && (hovered_piece_raw.unwrap().1
-                == self
-                    .game
-                    .borrow()
-                    .current_player()
-                    .expect("No player?")
-                    .color
-                || self.render_hints_opponent())
-            && self.render_hints()
-            && self.piece_touched.is_some()
-        {
-            let raw = &hovered_piece_raw.unwrap();
-            let game = self.game.borrow();
-            let hovered_piece = game
-                .pieces()
-                .get(raw.0)
-                .expect(&format!("Couldn't find piece {}", raw.0));
-            let hovered_player = game
-                .player(raw.1)
-                .expect(&format!("Couldn't find player {:?}", raw.1));
-            hovered_piece.movement_type()[0]
-                .flatten(&self.board, hovered_player, x, y)
-                .unwrap()
-                .into_iter()
-                .map(|(dx, dy)| ((x as isize + dx) as usize, (y as isize + dy) as usize))
-                .collect()
-        } else {
             vec![]
+        } else {
+            self.get_hints_at(x, y)
+        }
+    }
+
+    fn get_hints_at(&self, x: usize, y: usize) -> Vec<(usize, usize)> {
+        match self.get(x, y) {
+            Some((piece_raw, player_color)) if player_color == self.get_self_color() || self.render_hints_opponent() => {
+                let game = self.game.borrow();
+                let piece = game
+                    .pieces()
+                    .get(piece_raw)
+                    .expect(&format!("Couldn't find piece {}", piece_raw));
+                let player = game
+                    .player(player_color)
+                    .expect(&format!("Couldn't find player {:?}", player_color));
+                piece.movement_type()[0]
+                    .flatten(&self.board, player, x, y)
+                    .unwrap()
+                    .into_iter()
+                    .map(|(dx, dy)| ((x as isize + dx) as usize, (y as isize + dy) as usize))
+                    .collect()
+            },
+            _ => vec![],
         }
     }
 
@@ -505,11 +524,7 @@ impl<'a> widget::Widget<SharmatMessage, Renderer> for GBoard {
             if button == mouse::Button::Left {
                 let (m_x, m_y) = self.get_mouse_pos(layout.bounds(), cursor_position, tile_size);
                 if m_x != std::usize::MAX {
-                    if state == ButtonState::Pressed
-                        || self.piece_touched.is_some()
-                            && self.piece_touched.unwrap() != (m_x, m_y)
-                            && state == ButtonState::Released
-                    {
+                    if state == ButtonState::Pressed {
                         messages.push(SharmatMessage::TileTouched(m_x, m_y));
                     }
                 }
