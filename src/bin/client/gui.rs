@@ -127,11 +127,20 @@ impl Application for Sharmat {
         match message {
             SharmatMessage::TileTouched(x, y) => {
                 if let Some((sx, sy)) = self.last_touch {
-                    if self.is_action_legal(Action::Movement(sx, sy, x, y)) {
+                    if x == sx && y == sy {
+                        if self.is_action_legal(Action::Stay) {
+                            self.push_action(Action::Stay);
+                        } else if self.actions.len() == 0 {
+                            // user tries to unselect the piece
+                            self.last_touch = None;
+                            self.current_piece = None;
+                        }
+                    } else if self.is_action_legal(Action::Movement(sx, sy, x, y)) {
                         self.push_action(Action::Movement(sx, sy, x, y));
-                    } else {
+                    } else if self.actions.len() == 0 {
                         self.last_touch = None;
                         self.actions = vec![];
+                        self.current_piece = None;
                     }
                 } else {
                     if let Ok(Some((piece, color))) = self.game.board().get(x, y) {
@@ -180,31 +189,41 @@ impl Sharmat {
 
     pub fn is_action_legal(&self, action: Action) -> bool {
         let (board, current_player) = self.get_temporary_state().unwrap();
-        match action {
-            Action::Movement(sx, sy, x, y) => {
-                if let Ok(Some((piece_raw, color))) = board.get(sx, sy) {
-                    if color == current_player.color {
-                        if let Some(piece) = self.game.pieces().get(piece_raw) {
-                            return piece
-                                .movement_type()
-                                .get(self.actions.len())
-                                .map(|mt| {
-                                    mt.flatten(&board, &current_player, sx, sy)
-                                        .unwrap()
+        if let (Some((piece_raw, color)), Some((sx, sy))) = (self.current_piece, self.last_touch) {
+            if color == current_player.color {
+                if let Some(piece) = self.game.pieces().get(piece_raw) {
+                    let movements = piece
+                        .movement_type()
+                        .get(self.actions.len())
+                        .map(|mt| mt.flatten(&board, &current_player, &self.actions, sx, sy))
+                        .flatten();
+                    match movements {
+                        Some(movements) => {
+                            match action {
+                                Action::Movement(sx, sy, x, y) => {
+                                    return movements
                                         .iter()
-                                        .find(|(x2, y2)| {
-                                            (sx as isize + *x2) as usize == x
-                                                && (sy as isize + *y2) as usize == y
+                                        .find(|(dx, dy)| {
+                                            (sx as isize + *dx) as usize == x
+                                                && (sy as isize + *dy) as usize == y
                                         })
                                         .is_some()
-                                })
-                                .unwrap_or(false);
-                        }
+                                }
+                                Action::Stay => {
+                                    return movements
+                                        .iter()
+                                        .find(|(dx, dy)| *dx == 0 && *dy == 0)
+                                        .is_some()
+                                }
+                                _ => {}
+                            }
+                        },
+                        None => {}
                     }
                 }
             }
-            _ => {}
         }
+
         false
     }
 
@@ -327,8 +346,8 @@ impl<'a> GBoard<'a> {
                     .game()
                     .player(player_color)
                     .expect(&format!("Couldn't find player {:?}", player_color));
-                piece.movement_type()[0]
-                    .flatten(&self.board, player, x, y)
+                piece.movement_type()[self.sharmat.actions.len()]
+                    .flatten(&self.board, player, &self.sharmat.actions, x, y)
                     .unwrap()
                     .into_iter()
                     .map(|(dx, dy)| ((x as isize + dx) as usize, (y as isize + dy) as usize))

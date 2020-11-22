@@ -85,7 +85,7 @@ pub enum MovementCondition {
     /// If the current player is black
     AsBlack,
     /// A custom condition
-    Custom(&'static (dyn Fn(&Board, &Player, usize, usize, isize, isize) -> bool + 'static)),
+    Custom(&'static (dyn Fn(&Board, &Player, &Vec<Action>, usize, usize, isize, isize) -> bool + 'static)),
 }
 
 pub type RawMovement = (isize, isize);
@@ -121,6 +121,7 @@ impl MovementCondition {
         &self,
         board: &Board,
         player: &Player,
+        previous_actions: &Vec<Action>,
         x: usize,
         y: usize,
         dx: isize,
@@ -139,7 +140,7 @@ impl MovementCondition {
                 .is_none(),
             MovementCondition::AsWhite => player.color.white(),
             MovementCondition::AsBlack => player.color.black(),
-            MovementCondition::Custom(f) => f(board, player, x, y, dx, dy),
+            MovementCondition::Custom(f) => f(board, player, previous_actions, x, y, dx, dy),
         }
     }
 }
@@ -152,11 +153,12 @@ impl MovementType {
         &self,
         board: &Board,
         player: &Player,
+        previous_actions: &Vec<Action>,
         x: usize,
         y: usize,
     ) -> Option<Vec<RawMovement>> {
         match self {
-            MovementType::Stay => Some(vec![]),
+            MovementType::Stay => Some(vec![(0, 0)]),
             MovementType::Undirected(dx, dy) => {
                 let mut res = vec![];
                 let mut try_append = |dx: isize, dy: isize| {
@@ -198,9 +200,15 @@ impl MovementType {
                 }
             }
             MovementType::RangeAny(mv) => {
-                let mut res = vec![];
-                for child_movement in mv.flatten(board, player, x, y)?.into_iter() {
+                let mut res: Vec<(isize, isize)> = vec![];
+                for child_movement in mv.flatten(board, player, previous_actions, x, y)?.into_iter() {
                     let (dx, dy) = child_movement.clone();
+                    if dx == 0 && dy == 0 {
+                        if !res.iter().find(|(x, y)| *x == 0 && *y == 0).is_some() {
+                            res.push((0, 0));
+                        }
+                        continue;
+                    }
                     for mult in 1..=(board.width.get().max(board.height.get()) as isize) {
                         if is_within_bounds(board, x as isize + dx * mult, y as isize + dy * mult) {
                             let target_piece = board
@@ -226,9 +234,15 @@ impl MovementType {
                 Some(res)
             }
             MovementType::Range(mv, max_range) => {
-                let mut res = vec![];
-                for child_movement in mv.flatten(board, player, x, y)?.into_iter() {
+                let mut res: Vec<(isize, isize)> = vec![];
+                for child_movement in mv.flatten(board, player, previous_actions, x, y)?.into_iter() {
                     let (dx, dy) = child_movement.clone();
+                    if dx == 0 && dy == 0 {
+                        if !res.iter().find(|(x, y)| *x == 0 && *y == 0).is_some() {
+                            res.push((0, 0));
+                        }
+                        continue;
+                    }
                     for mult in 1..=(*max_range as isize) {
                         if is_within_bounds(board, x as isize + dx * mult, y as isize + dy * mult) {
                             let target_piece = board
@@ -256,7 +270,7 @@ impl MovementType {
             MovementType::Union(moves) => {
                 let mut res = vec![];
                 for mv in moves {
-                    for raw_mv in mv.flatten(board, player, x, y)?.into_iter() {
+                    for raw_mv in mv.flatten(board, player, previous_actions, x, y)?.into_iter() {
                         res.push(raw_mv);
                     }
                 }
@@ -264,10 +278,10 @@ impl MovementType {
             }
             MovementType::Condition(mv, tags) => {
                 let mut res = vec![];
-                for raw_mv in mv.flatten(board, player, x, y)?.into_iter() {
+                for raw_mv in mv.flatten(board, player, previous_actions, x, y)?.into_iter() {
                     if tags
                         .iter()
-                        .all(|t| t.validate(board, player, x, y, raw_mv.0, raw_mv.1))
+                        .all(|t| t.validate(board, player, previous_actions, x, y, raw_mv.0, raw_mv.1))
                     {
                         res.push(raw_mv);
                     }

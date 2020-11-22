@@ -29,9 +29,11 @@ fn main() {
                 .alias("bishop")
                 .display_white("standard.w_bishop")
                 .display_black("standard.b_bishop")
-                .movement(vec![MovementType::RangeAny(Box::new(
-                    MovementType::Undirected(1, 1),
-                ))])
+                .movement(vec![
+                    MovementType::RangeAny(Box::new(
+                        MovementType::Undirected(1, 1),
+                    )),
+                ])
                 .build(),
         )
         .piece(
@@ -114,7 +116,7 @@ fn main() {
                         vec![
                             MovementCondition::AsWhite,
                             MovementCondition::NoCapture,
-                            MovementCondition::Custom(&|_b, _p, _x, y, _dx, _dy| y == 1),
+                            MovementCondition::Custom(&|_b, _p, _a, _x, y, _dx, _dy| y == 1),
                         ],
                     ),
                     MovementType::Condition(
@@ -122,7 +124,7 @@ fn main() {
                         vec![
                             MovementCondition::AsBlack,
                             MovementCondition::NoCapture,
-                            MovementCondition::Custom(&|b, _p, _x, y, _dx, _dy| {
+                            MovementCondition::Custom(&|b, _p, _a, _x, y, _dx, _dy| {
                                 y == b.height.get() - 2
                             }),
                         ],
