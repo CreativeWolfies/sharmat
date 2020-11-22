@@ -32,6 +32,8 @@ pub enum MovementType {
     /// `RangeAny(Directed(dx, dy))` is equivalent to moving a piece that is on `(x, y)` to `(x + n*dx, y + n*dy)`, with any `n > 1`.
     /// No other piece must stand in that piece's path; any opponent's piece will be taken and the piece will stop.
     ///
+    /// If MovementType::Stay is within the input movement type, then it will also be yielded (once)
+    ///
     /// ## Example:
     ///
     /// ```rust,ignore
@@ -43,6 +45,8 @@ pub enum MovementType {
     /// `Range(Directed(dx, dy), max)` is equivalent to moving a piece that is on `(x, y)` to `(x + n*dx, y + n*dy)`, with any `1 < n ≤ max`.
     /// No other piece must stand in that piece's path; any opponent's piece will be taken and the piece will stop.
     ///
+    /// If MovementType::Stay is within the input movement type, then it will also be yielded (once)
+    ///
     /// ## Example:
     ///
     /// ```rust,ignore
@@ -50,7 +54,7 @@ pub enum MovementType {
     /// ```
     Range(Box<MovementType>, usize),
 
-    /// Assembles two movement types into a union of both of them
+    /// Assembles two or more movement types into a union of both of them
     /// `Union(a, b, c, ..., ω)` is equivalent to being able to do `a` OR `b` OR `c` OR ... OR `ω`.
     ///
     /// ## Example:
@@ -59,6 +63,52 @@ pub enum MovementType {
     /// let king_movement = MovementType::Union(vec![MovementType::Undirected(0, 1), MovementType::Undirected(1, 1)]);
     /// ```
     Union(Vec<MovementType>),
+
+    /// Assembles two movement types into a so-called "hook mover" or "bent rider"
+    /// This is similar to simply having a composition of two moves, except that the piece may not progress after having captured one piece
+    /// `Hook(a, b)` is equivalent to `a` THEN `b`
+    ///
+    /// If the second move is optional, then make sure that `MovementType::Stay` is a part of it.
+    /// No verification that a turn is really made is done.
+    ///
+    /// Note that the resulting, flattened list of possible moves will lose all sense of "bend".
+    /// This means that the following example will likely produce a board filled with every tile highlighted.
+    ///
+    /// ## Example:
+    ///
+    /// ```rust,ignore
+    /// let hook_mover = MovementType::Union(vec![
+    ///     // vertical then horizontal
+    ///     MovementType::Hook(
+    ///         Box::new(MovementType::RangeAny(Box::new(MovementType::Union(vec![
+    ///             MovementType::Directed(0, 1),
+    ///             MovementType::Directed(0, -1),
+    ///         ])))),
+    ///         Box::new(MovementType::Union(vec![
+    ///             MovementType::RangeAny(Box::new(MovementType::Union(vec![
+    ///                 MovementType::Directed(1, 0),
+    ///                 MovementType::Directed(-1, 0),
+    ///             ]))),
+    ///             MovementType::Stay,
+    ///         ])),
+    ///     ),
+    ///     // horizontal then vertical
+    ///     MovementType::Hook(
+    ///         Box::new(MovementType::RangeAny(Box::new(MovementType::Union(vec![
+    ///             MovementType::Directed(1, 0),
+    ///             MovementType::Directed(-1, 0),
+    ///         ])))),
+    ///         Box::new(MovementType::Union(vec![
+    ///             MovementType::RangeAny(Box::new(MovementType::Union(vec![
+    ///                 MovementType::Directed(0, 1),
+    ///                 MovementType::Directed(0, -1),
+    ///             ]))),
+    ///             MovementType::Stay,
+    ///         ])),
+    ///     ),
+    /// ]);
+    /// ```
+    Hook(Box<MovementType>, Box<MovementType>),
 
     /// Adds one or more conditions to a movement type.
     /// See `MovementCondition` for more information on the different, possible conditions.
@@ -276,6 +326,29 @@ impl MovementType {
                 }
                 Some(res)
             }
+            MovementType::Hook(first, second) => {
+                let mut res = vec![];
+                for first_mv in first.flatten(board, player, previous_actions, x, y)?.into_iter() {
+                    let x2 = (x as isize + first_mv.0) as usize;
+                    let y2 = (y as isize + first_mv.1) as usize;
+                    let target_piece = board.get(x2, y2).ok().flatten();
+                    if target_piece.is_none() {
+                        for second_mv in second.flatten(board, player, previous_actions, x2, y2)?.into_iter() {
+                            res.push((second_mv.0 + first_mv.0, second_mv.1 + first_mv.1));
+                        }
+                    } else if target_piece.unwrap().1 != player.color {
+                        if second
+                            .flatten(board, player, previous_actions, x2, y2)?
+                            .into_iter()
+                            .find(|(dx, dy)| *dx == 0 && *dy == 0)
+                            .is_some()
+                        {
+                            res.push(first_mv.clone());
+                        }
+                    }
+                }
+                Some(res)
+            }
             MovementType::Condition(mv, tags) => {
                 let mut res = vec![];
                 for raw_mv in mv.flatten(board, player, previous_actions, x, y)?.into_iter() {
@@ -312,7 +385,6 @@ impl Action {
             Action::Stay => Ok(()),
             Action::Movement(x, y, x2, y2) => {
                 let piece = board.get(*x, *y)?;
-                let target_piece = board.get(*x2, *y2);
 
                 board.set(*x, *y, None)?;
                 board.set(*x2, *y2, piece)?;
